@@ -206,6 +206,27 @@ of `ruby-program-name').  Runs the hooks `inferior-ruby-mode-hook'
         (inf-ruby-mode)))
   (pop-to-buffer (setq inf-ruby-buffer (format "*%s*" name))))
 
+(defun run-ruby-complex (startfile &optional command switches name)
+  "A more complex version of `run-ruby'.  The process is passed a
+startfile (For more information on STARTFILE see `make-comint').
+This also allows SWITCHES to be specified without specifying the
+COMMAND (which is useful if you would prefer to use the default
+value for COMMAND)."
+  (interactive)
+  (setq command (concat (or command (cdr (assoc inf-ruby-default-implementation
+                                                inf-ruby-implementations)))
+                        " "
+                        switches))
+  (setq name (or name "ruby"))
+
+  (if (not (comint-check-proc inf-ruby-buffer))
+      (let ((commandlist (split-string command)))
+        (message (format "make-comint %S %S %S %S" name (car commandlist) startfile (cdr commandlist)))
+        (set-buffer (apply 'make-comint name (car commandlist)
+                           startfile (cdr commandlist)))
+        (inf-ruby-mode)))
+  (pop-to-buffer (setq inf-ruby-buffer (format "*%s*" name))))
+
 (defun inf-ruby-proc ()
   "Returns the current IRB process. See variable inf-ruby-buffer."
   (or (get-buffer-process (if (eq major-mode 'inf-ruby-mode)

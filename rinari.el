@@ -208,10 +208,14 @@ prefix argument allows editing of the console command arguments."
 	  (concat (expand-file-name "console" (file-name-as-directory
 					       (expand-file-name "script" (rinari-root))))
 		  (if rinari-rails-env (concat " " rinari-rails-env))))
-	 (command (if edit-cmd-args
-			      (read-string "Run Ruby: " (concat script " "))
-			    script)))
-    (run-ruby command)
+	 (command (split-string (if edit-cmd-args
+                                    (read-string "Run Ruby: " (concat script " "))
+                                  script)))
+         (startfile (car command))
+         (switches (mapconcat #'identity (cdr command) " ")))
+
+    (message (format "startfile=%s switches=%s" startfile switches))
+    (run-ruby-complex startfile nil nil)
     (save-excursion
       (set-buffer "*ruby*")
       (set (make-local-variable 'inf-ruby-first-prompt-pattern) "^>> ")

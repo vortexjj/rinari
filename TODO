@@ -9,6 +9,17 @@ List of tasks for rinari
 for documentation see [[http://rinari.rubyforge.org/]]
 for background see http://groups.google.com/group/emacs-on-rails
 
+* TODO windows friendly inf-ruby
+  :PROPERTIES:
+  :suggested-by: Deric Bytes
+  :END:
+
+For more information see [[http://dericbytes.blogspot.com/2009/02/emacs-rinari-console-on-windows.html][Deric's blog post]].
+
+#+begin_src emacs-lisp
+(set-buffer (apply 'make-comint "dericbytes" "irb" "c:/projects/depot/script/console" '("--inf-ruby-mode" "-r" "irb/completion")))
+#+end_src
+
 * TODO full test coverage (ERT) [0/2]
 - [ ] movement tests
   - [ ] controller
@@ -25,7 +36,7 @@ for background see http://groups.google.com/group/emacs-on-rails
 
 switch from using elunit.el to ert.el for testing
 
-* TODO Merb support [2/4]
+* DONE Merb support [4/4]
   :PROPERTIES:
   :suggested-by: Jorge Calás Lozano
   :END:
@@ -40,11 +51,11 @@ doesn't have it.
 rinari-merb (minami? why not just rinari-merb? what if someone create a
 rinari version for sinatra? sinasi?)
 
-** TODO load automatically
+** DONE load automatically
 it doesn't load automatically when you visit a project file or the
 project directory (with dired). So I should call minami-minor-mode
 
-** TODO jump support
+** DONE jump support
 jump: it doesn't really jump, but seems to look for the correct paths,
 at least that is what *Messages* buffer says:
 
