@@ -275,7 +275,8 @@ argument allows editing of the console command arguments."
 
     (run-ruby command)
     (with-current-buffer "*ruby*"
-      (set (make-local-variable 'inf-ruby-prompt-pattern) "^\\(j?ruby[^> ]+\\|J?RUBY[^> ]+\\|irb([^> ]+\\)?\\( ?:[0-9]+\\)* ?>>? ")
+      (set (make-local-variable 'inf-ruby-prompt-pattern)
+           "^\\(irb([^)]+)\\|\\(jruby-\\|JRUBY-\\)?[1-9]\\.[0-9]\\.[0-9]+\\(-?p?[0-9]+\\)?\\) ?\\(:[0-9]+\\)* ?[\]>*\"'/`]>? *")
       (set (make-local-variable 'inf-ruby-first-prompt-pattern) inf-ruby-prompt-pattern)
       (rinari-launch))))
 
