@@ -591,7 +591,7 @@ renders and redirects to find the final controller or view."
    (rspec
     "r"
     (("app/\\1\\.rb"                           . "spec/\\1_spec.rb")
-     ("app/\\1"                                . "spec/\\1_spec.rb")
+     ("app/\\1$"                               . "spec/\\1_spec.rb")
      ("spec/views/\\1_spec.rb"                 . "app/views/\\1")
      ("spec/\\1_spec.rb"                       . "app/\\1.rb")
      (t                                        . "spec/.*"))
