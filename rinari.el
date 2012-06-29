@@ -712,9 +712,9 @@ behavior."
            (specs (third type))
            (make (fourth type)))
        (eval `(defjump
-                (quote ,(read (format "rinari-find-%S" name)))
-                (quote ,specs)
-                'rinari-root
+                ,(intern (format "rinari-find-%S" name))
+                ,specs
+                rinari-root
                 ,(format "Go to the most logical %S given the current location" name)
                 ,(if make `(quote ,make))
                 'ruby-add-log-current-method))))
