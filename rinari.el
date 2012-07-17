@@ -285,43 +285,47 @@ argument allows editing of the console command arguments."
       (set (make-local-variable 'inf-ruby-first-prompt-pattern) inf-ruby-prompt-pattern)
       (rinari-launch))))
 
+(defun rinari-sql-buffer-nanme (env)
+  "Return the name of the sql buffer for ENV."
+  (format "*%s-sql*" env))
+
 (defun rinari-sql ()
-  "Browse the application's database.  Looks up login information
-from your conf/database.sql file."
+  "Browse the application's database.
+Looks up login information from your conf/database.sql file."
   (interactive)
-  (flet ((sql-name (env) (format "*%s-sql*" env)))
-    (let* ((environment (or rinari-rails-env (getenv "RAILS_ENV") "development"))
-           (sql-buffer (get-buffer (sql-name environment))))
-      (if sql-buffer
-          (pop-to-buffer sql-buffer)
-        (let* ((database-alist (save-excursion
-                                 (with-temp-buffer
-                                   (insert-file-contents
-                                    (expand-file-name
-                                     "database.yml"
-                                     (file-name-as-directory
-                                      (expand-file-name "config" (rinari-root)))))
-                                   (goto-char (point-min))
-                                   (re-search-forward (concat "^" environment ":"))
-                                   (rinari-parse-yaml))))
-               (adapter (or (cdr (assoc "adapter" database-alist)) "sqlite"))
-               (sql-user (or (cdr (assoc "username" database-alist)) "root"))
-               (sql-password (or (cdr (assoc "password" database-alist)) ""))
-               (sql-password (if (> (length sql-password) 0) sql-password nil))
-               (sql-database (or (cdr (assoc "database" database-alist))
-                                 (concat (file-name-nondirectory (rinari-root))
-                                         "_" environment)))
-               (server (or (cdr (assoc "host" database-alist)) "localhost"))
-               (port (cdr (assoc "port" database-alist)))
-               (sql-server (if port (concat server ":" port) server)))
-          (cond ((string-match "mysql" adapter)
-                 (setf adapter "mysql"))
-                ((string-match "sqlite" adapter)
-                 (setf adapter "sqlite"))
-                ((string-match "postgresql" adapter)
-                 (setf adapter "postgres")))
-          (eval (list (intern (concat "sql-" adapter))))
-          (rename-buffer (sql-name environment)) (rinari-launch))))))
+  (let* ((environment (or rinari-rails-env (getenv "RAILS_ENV") "development"))
+         (sql-buffer (get-buffer (rinari-sql-buffer-name environment))))
+    (if sql-buffer
+        (pop-to-buffer sql-buffer)
+      (let* ((database-alist (save-excursion
+                               (with-temp-buffer
+                                 (insert-file-contents
+                                  (expand-file-name
+                                   "database.yml"
+                                   (file-name-as-directory
+                                    (expand-file-name "config" (rinari-root)))))
+                                 (goto-char (point-min))
+                                 (re-search-forward (concat "^" environment ":"))
+                                 (rinari-parse-yaml))))
+             (adapter (or (cdr (assoc "adapter" database-alist)) "sqlite"))
+             (sql-user (or (cdr (assoc "username" database-alist)) "root"))
+             (sql-password (or (cdr (assoc "password" database-alist)) ""))
+             (sql-password (if (> (length sql-password) 0) sql-password nil))
+             (sql-database (or (cdr (assoc "database" database-alist))
+                               (concat (file-name-nondirectory (rinari-root))
+                                       "_" environment)))
+             (server (or (cdr (assoc "host" database-alist)) "localhost"))
+             (port (cdr (assoc "port" database-alist)))
+             (sql-server (if port (concat server ":" port) server)))
+        (cond ((string-match "mysql" adapter)
+               (setf adapter "mysql"))
+              ((string-match "sqlite" adapter)
+               (setf adapter "sqlite"))
+              ((string-match "postgresql" adapter)
+               (setf adapter "postgres")))
+        (eval (list (intern (concat "sql-" adapter))))
+        (rename-buffer sql-buffer)
+        (rinari-launch)))))
 
 (defun rinari-web-server (&optional edit-cmd-args)
   "Starts a Rails webserver.  Dumps output to a compilation buffer
