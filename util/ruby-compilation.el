@@ -154,8 +154,7 @@ name to construct the name of the compilation buffer."
     (if (string-match "shell" task)
 	(progn ;; hand the shell command to `run-ruby'
 	  (run-ruby (concat "cap " cap-args) "cap")
-	  (save-excursion
-	    (set-buffer "*cap*")
+	  (with-current-buffer "*cap*"
 	    (set (make-local-variable 'inf-ruby-first-prompt-pattern) "^cap> ")
 	    (set (make-local-variable 'inf-ruby-prompt-pattern) "^cap> ")))
       (progn ;; handle all cap commands aside from shell
@@ -215,8 +214,8 @@ name to construct the name of the compilation buffer."
 (defun ruby-compilation-do (name cmdlist)
   (let* ((buffer (apply 'make-comint name (car cmdlist) nil (cdr cmdlist)))
          (proc (get-buffer-process buffer)))
-    (save-excursion
-      (set-buffer buffer) ;; set buffer local variables and process ornaments
+    (with-current-buffer buffer
+      ;; set buffer local variables and process ornaments
       (buffer-disable-undo)
       (set-process-sentinel proc 'ruby-compilation-sentinel)
       (set-process-filter proc 'ruby-compilation-insertion-filter)
