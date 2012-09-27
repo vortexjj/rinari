@@ -4,10 +4,10 @@
 
 ;; Author: Eric Schulte
 ;; URL: https://github.com/eschulte/rinari
-;; Version: 0.8
+;; Version: 0.9
 ;; Created: 2008-08-23
 ;; Keywords: test convenience
-;; Package-Requires: ((ruby-mode "1.1") (inf-ruby "2.2.1"))
+;; Package-Requires: ((inf-ruby "2.2.1"))
 
 ;;; License:
 
