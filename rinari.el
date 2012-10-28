@@ -70,7 +70,6 @@
                       (expand-file-name "inf-ruby" util-dir)))
        (jump-dir (file-name-as-directory
                   (expand-file-name "jump" util-dir))))
-  (add-to-list 'load-path this-dir)
   (add-to-list 'load-path util-dir)
   (add-to-list 'load-path inf-ruby-dir)
   (add-to-list 'load-path jump-dir))
