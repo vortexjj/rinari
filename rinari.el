@@ -64,15 +64,12 @@
 ;;; Code:
 ;;;###begin-elpa-ignore
 (let* ((this-dir (file-name-directory (or load-file-name buffer-file-name)))
-       (util-dir (file-name-as-directory
-                  (expand-file-name "util" this-dir)))
-       (inf-ruby-dir (file-name-as-directory
-                      (expand-file-name "inf-ruby" util-dir)))
-       (jump-dir (file-name-as-directory
-                  (expand-file-name "jump" util-dir))))
-  (add-to-list 'load-path util-dir)
-  (add-to-list 'load-path inf-ruby-dir)
-  (add-to-list 'load-path jump-dir))
+       (util-dir (file-name-as-directory (expand-file-name "util" this-dir)))
+       (inf-ruby-dir (file-name-as-directory (expand-file-name "inf-ruby" util-dir)))
+       (jump-dir (file-name-as-directory (expand-file-name "jump" util-dir))))
+  (dolist (dir (list util-dir inf-ruby-dir jump-dir))
+    (when (file-exists-p dir)
+      (add-to-list 'load-path dir))))
 ;;;###end-elpa-ignore
 (require 'ruby-mode)
 (require 'inf-ruby)
