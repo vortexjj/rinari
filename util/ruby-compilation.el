@@ -47,6 +47,7 @@
 ;; Package it up with dependencies for ELPA.
 
 ;;; Code:
+
 ;; fill in some missing variables for XEmacs
 (when (featurep 'xemacs)
   ;;this variable does not exist in XEmacs
@@ -83,133 +84,27 @@
 (defvar ruby-compilation-reuse-buffers t
   "Whether to re-use the same comint buffer for focussed tests.")
 
-;;;###autoload
-(defun pcomplete/rake ()
-  (pcomplete-here (pcmpl-rake-tasks)))
+
+;;; Core plumbing
 
-(defun pcmpl-rake-tasks ()
-   "Return a list of all the rake tasks defined in the current
-projects.  I know this is a hack to put all the logic in the
-exec-to-string command, but it works and seems fast"
-   (delq nil (mapcar #'(lambda(line)
-			(if (string-match "rake \\([^ ]+\\)" line) (match-string 1 line)))
-		     (split-string (shell-command-to-string "rake -T") "[\n]"))))
+(defun ruby-compilation--adjust-paths (string)
+  (replace-regexp-in-string
+   "^\\([\t ]+\\)/test" "\\1test"
+   (replace-regexp-in-string "\\[/test" "[test" string)))
 
-;;;###autoload
-(defun pcomplete/cap ()
-  (pcomplete-here (pcmpl-cap-tasks)))
+(defun ruby-compilation--insertion-filter (proc string)
+  "Insert text to buffer stripping ansi color codes"
+  (with-current-buffer (process-buffer proc)
+    (let ((moving (= (point) (process-mark proc))))
+      (save-excursion
+	(goto-char (process-mark proc))
+	(insert (ansi-color-apply (ruby-compilation--adjust-paths string)))
+	(set-marker (process-mark proc) (point)))
+      (if moving (goto-char (process-mark proc))))))
 
-(defun pcmpl-cap-tasks ()
-   "Return a list of all the cap tasks defined in the current
-project.  I know this is a hack to put all the logic in the
-exec-to-string command, but it works and seems fast"
-   (delq nil (mapcar #'(lambda(line)
-			(if (string-match "cap \\([^ ]+\\)" line) (match-string 1 line)))
-		     (split-string (shell-command-to-string "cap -T") "[\n]"))))
-
-;;;###autoload
-(defun ruby-compilation-run (cmd &optional ruby-options name)
-  "Run a ruby process dumping output to a ruby compilation
-buffer. If supplied, `name' will be used in place of the script
-name to construct the name of the compilation buffer."
-  (interactive "FRuby Comand: ")
-  (let ((name (or name (file-name-nondirectory (car (split-string cmd)))))
-	(cmdlist (append (list ruby-compilation-executable)
-                         ruby-options
-                         (split-string (expand-file-name cmd)))))
-    (pop-to-buffer (ruby-compilation-do name cmdlist))))
-
-;;;###autoload
-(defun ruby-compilation-rake (&optional edit task env-vars)
-  "Run a rake process dumping output to a ruby compilation buffer."
-  (interactive "P")
-  (let* ((task (concat
-		(or task (if (stringp edit) edit)
-		    (completing-read "Rake: " (pcmpl-rake-tasks)))
-		" "
-		(mapconcat (lambda (pair)
-			     (format "%s=%s" (car pair) (cdr pair)))
-			   env-vars " ")))
-	 (rake-args (if (and edit (not (stringp edit)))
-			(read-from-minibuffer "Edit Rake Command: " (concat task " "))
-		      task)))
-    (pop-to-buffer (ruby-compilation-do
-		    "rake" (cons ruby-compilation-executable-rake
-				 (split-string rake-args))))))
-
-;;;###autoload
-(defun ruby-compilation-cap (&optional edit task env-vars)
-  "Run a capistrano process dumping output to a ruby compilation buffer."
-  (interactive "P")
-  (let* ((task (concat
-		(or task (if (stringp edit) edit)
-		    (completing-read "Cap: " (pcmpl-cap-tasks)))
-		" "
-		(mapconcat (lambda (pair)
-			     (format "%s=%s" (car pair) (cdr pair)))
-			   env-vars " ")))
-	 (cap-args (if (and edit (not (stringp edit)))
-		       (read-from-minibuffer "Edit Cap Command: " (concat task " "))
-		     task)))
-    (if (string-match "shell" task)
-	(progn ;; hand the shell command to `run-ruby'
-	  (run-ruby (concat "cap " cap-args) "cap")
-	  (with-current-buffer "*cap*"
-	    (set (make-local-variable 'inf-ruby-first-prompt-pattern) "^cap> ")
-	    (set (make-local-variable 'inf-ruby-prompt-pattern) "^cap> ")))
-      (progn ;; handle all cap commands aside from shell
-	(pop-to-buffer (ruby-compilation-do "cap" (cons "cap" (split-string cap-args))))
-	(ruby-capistrano-minor-mode) ;; override some keybindings to make interaction possible
-	(push (cons 'ruby-capistrano-minor-mode ruby-capistrano-minor-mode-map) minor-mode-map-alist)))))
-
-(defvar ruby-capistrano-minor-mode-map
-  (let ((map (make-sparse-keymap)))
-    (define-key map "n" 'self-insert-command)
-    (define-key map "p" 'self-insert-command)
-    (define-key map "q" 'self-insert-command)
-    (define-key map [return] 'comint-send-input) map)
-  "Key map for Ruby Capistrano minor mode.")
-
-(define-minor-mode ruby-capistrano-minor-mode
-  "Enable Ruby Compilation minor mode providing some key-bindings
-  for navigating ruby compilation buffers."
-  nil
-  " capstrano"
-  ruby-capistrano-minor-mode-map)
-
-;;;###autoload
-(defun ruby-compilation-this-buffer ()
-  "Run the current buffer through Ruby compilation."
-  (interactive)
-  (ruby-compilation-run (buffer-file-name)))
-
-(defun ruby-compilation-this-test ()
-  "Run the test at point through Ruby compilation."
-  (interactive)
-  (let ((test-name (ruby-compilation-this-test-name)))
-    (pop-to-buffer (ruby-compilation-do
-                    (ruby-compilation-this-test-buffer-name test-name)
-                    (list ruby-compilation-executable
-                          (buffer-file-name)
-                          ruby-compilation-test-name-flag test-name)))))
-
-(defun ruby-compilation-this-test-buffer-name (test-name)
-  "The name of the buffer in which test-at-point will run."
-  (interactive)
-  (if ruby-compilation-reuse-buffers
-      (file-name-nondirectory (buffer-file-name))
-    (format "ruby: %s - %s"
-            (file-name-nondirectory (buffer-file-name))
-            test-name)))
-
-(defun ruby-compilation-this-test-name ()
-  "Which test are we currently in?"
-  (let ((this-test (which-function)))
-    (if (listp this-test) (setq this-test (car this-test)))
-    (if (or (not this-test)
-            (not (string-match "#test_" this-test)))
-        (message "Point is not in a test.")
-      (cadr (split-string this-test "#")))))
+(defun ruby-compilation--sentinel (proc msg)
+  "Notify to changes in process state"
+  (message "%s - %s" proc (replace-regexp-in-string "\n" "" msg)))
 
 (defun ruby-compilation-do (name cmdlist)
   (let* ((buffer (apply 'make-comint name (car cmdlist) nil (cdr cmdlist)))
@@ -217,37 +112,18 @@ name to construct the name of the compilation buffer."
     (with-current-buffer buffer
       ;; set buffer local variables and process ornaments
       (buffer-disable-undo)
-      (set-process-sentinel proc 'ruby-compilation-sentinel)
-      (set-process-filter proc 'ruby-compilation-insertion-filter)
+      (set-process-sentinel proc 'ruby-compilation--sentinel)
+      (set-process-filter proc 'ruby-compilation--insertion-filter)
       (set (make-local-variable 'compilation-error-regexp-alist)
            ruby-compilation-error-regexp-alist)
       (set (make-local-variable 'kill-buffer-hook)
            (lambda ()
              (let ((orphan-proc (get-buffer-process (buffer-name))))
-               (if orphan-proc
-                   (kill-process orphan-proc)))))
+               (when orphan-proc
+                 (kill-process orphan-proc)))))
       (compilation-minor-mode t)
       (ruby-compilation-minor-mode t)
       (buffer-name))))
-
-(defun ruby-compilation-insertion-filter (proc string)
-  "Insert text to buffer stripping ansi color codes"
-  (with-current-buffer (process-buffer proc)
-    (let ((moving (= (point) (process-mark proc))))
-      (save-excursion
-	(goto-char (process-mark proc))
-	(insert (ansi-color-apply (ruby-compilation-adjust-paths string)))
-	(set-marker (process-mark proc) (point)))
-      (if moving (goto-char (process-mark proc))))))
-
-(defun ruby-compilation-adjust-paths (string)
-  (replace-regexp-in-string
-   "^\\([\t ]+\\)/test" "\\1test"
-   (replace-regexp-in-string "\\[/test" "[test" string)))
-
-(defun ruby-compilation-sentinel (proc msg)
-  "Notify to changes in process state"
-  (message "%s - %s" proc (replace-regexp-in-string "\n" "" msg)))
 
 (defun ruby-compilation-previous-error-group ()
   "Jump to the start of the previous error group in the current
@@ -256,7 +132,8 @@ compilation buffer."
   (compilation-previous-error 1)
   (while (string-match ruby-compilation-error-regexp (thing-at-point 'line))
     (forward-line -1))
-  (forward-line 1) (recenter))
+  (forward-line 1)
+  (recenter))
 
 (defun ruby-compilation-next-error-group ()
   "Jump to the start of the previous error group in the current
@@ -264,7 +141,8 @@ compilation buffer."
   (interactive)
   (while (string-match ruby-compilation-error-regexp (thing-at-point 'line))
     (forward-line 1))
-  (compilation-next-error 1) (recenter))
+  (compilation-next-error 1)
+  (recenter))
 
 (defvar ruby-compilation-minor-mode-map
   (let ((map (make-sparse-keymap)))
@@ -287,6 +165,7 @@ compilation buffer."
     (delete-region (point-min) (point-max))))
 
 ;; So we can invoke it easily.
+;;;###autoload
 (eval-after-load 'ruby-mode
   '(progn
      (define-key ruby-mode-map (kbd "C-x t") 'ruby-compilation-this-buffer)
@@ -296,6 +175,147 @@ compilation buffer."
 (dolist (executable (list "jruby" "rbx" "ruby1.9" "ruby1.8" "ruby"))
   (add-to-list 'safe-local-variable-values
                (cons 'ruby-compilation-executable executable)))
+
+
+;;; Basic public interface
+
+;;;###autoload
+(defun ruby-compilation-run (cmd &optional ruby-options name)
+  "Run a ruby process dumping output to a ruby compilation
+buffer. If supplied, `name' will be used in place of the script
+name to construct the name of the compilation buffer."
+  (interactive "FRuby Comand: ")
+  (let ((name (or name (file-name-nondirectory (car (split-string cmd)))))
+	(cmdlist (append (list ruby-compilation-executable)
+                         ruby-options
+                         (split-string (expand-file-name cmd)))))
+    (pop-to-buffer (ruby-compilation-do name cmdlist))))
+
+;;;###autoload
+(defun ruby-compilation-this-buffer ()
+  "Run the current buffer through Ruby compilation."
+  (interactive)
+  (ruby-compilation-run (buffer-file-name)))
+
+
+;;; Special handling for rake and capistrano
+
+(defun ruby-compilation--extract-matches (command pattern)
+  "Run COMMAND, and return all the captured matches for PATTERN."
+  (delq nil (mapcar #'(lambda(line)
+			(when (string-match pattern line)
+                          (match-string 1 line)))
+		     (split-string (shell-command-to-string command) "[\n]"))))
+
+(defun ruby-compilation--format-env-vars (pairs)
+  "Convert PAIRS of (name . value) into a list of name=value strings."
+  (mapconcat (lambda (pair)
+               (format "%s=%s" (car pair) (cdr pair)))
+             pairs " "))
+
+(defun pcmpl-rake-tasks ()
+   "Return a list of all the rake tasks defined in the current projects."
+   (ruby-compilation--extract-matches "rake -T" "rake \\([^ ]+\\)"))
+
+;;;###autoload
+(defun pcomplete/rake ()
+  (pcomplete-here (pcmpl-rake-tasks)))
+
+;;;###autoload
+(defun ruby-compilation-rake (&optional edit task env-vars)
+  "Run a rake process dumping output to a ruby compilation buffer."
+  (interactive "P")
+  (let* ((task (concat
+		(or task (if (stringp edit) edit)
+		    (completing-read "Rake: " (pcmpl-rake-tasks)))
+		" "
+		(ruby-compilation--format-env-vars env-vars)))
+	 (rake-args (if (and edit (not (stringp edit)))
+			(read-from-minibuffer "Edit Rake Command: " (concat task " "))
+		      task)))
+    (pop-to-buffer (ruby-compilation-do
+		    "rake" (cons ruby-compilation-executable-rake
+				 (split-string rake-args))))))
+
+
+(defun pcmpl-cap-tasks ()
+   "Return a list of all the cap tasks defined in the current project."
+   (ruby-compilation--extract-matches "cap -T" "cap \\([^ ]+\\)"))
+
+;;;###autoload
+(defun pcomplete/cap ()
+  (pcomplete-here (pcmpl-cap-tasks)))
+
+;;;###autoload
+(defun ruby-compilation-cap (&optional edit task env-vars)
+  "Run a capistrano process dumping output to a ruby compilation buffer."
+  (interactive "P")
+  (let* ((task (concat
+		(or task
+                    (when (stringp edit) edit)
+		    (completing-read "Cap: " (pcmpl-cap-tasks)))
+		" "
+                (ruby-compilation--format-env-vars env-vars)))
+	 (cap-args (if (and edit (not (stringp edit)))
+		       (read-from-minibuffer "Edit Cap Command: " (concat task " "))
+		     task)))
+    (if (string-match "shell" task)
+        (with-current-buffer (run-ruby (concat "cap " cap-args) "cap")
+          (set (make-local-variable 'inf-ruby-first-prompt-pattern) "^cap> ")
+          (set (make-local-variable 'inf-ruby-prompt-pattern) "^cap> "))
+      (progn ;; handle all cap commands aside from shell
+	(pop-to-buffer (ruby-compilation-do "cap" (cons "cap" (split-string cap-args))))
+	(ruby-capistrano-minor-mode) ;; override some keybindings to make interaction possible
+	(push (cons 'ruby-capistrano-minor-mode ruby-capistrano-minor-mode-map) minor-mode-map-alist)))))
+
+(defvar ruby-capistrano-minor-mode-map
+  (let ((map (make-sparse-keymap)))
+    (define-key map "n" 'self-insert-command)
+    (define-key map "p" 'self-insert-command)
+    (define-key map "q" 'self-insert-command)
+    (define-key map [return] 'comint-send-input) map)
+  "Key map for Ruby Capistrano minor mode.")
+
+(define-minor-mode ruby-capistrano-minor-mode
+  "Enable Ruby Compilation minor mode providing some key-bindings
+  for navigating ruby compilation buffers."
+  nil
+  " capstrano"
+  ruby-capistrano-minor-mode-map)
+
+
+;;; Running tests
+
+(defun ruby-compilation-this-test-buffer-name (test-name)
+  "The name of the buffer in which test-at-point will run."
+  (interactive)
+  (if ruby-compilation-reuse-buffers
+      (file-name-nondirectory (buffer-file-name))
+    (format "ruby: %s - %s"
+            (file-name-nondirectory (buffer-file-name))
+            test-name)))
+
+(defun ruby-compilation-this-test-name ()
+  "Which test are we currently in?"
+  (let ((this-test (which-function)))
+    (when (listp this-test)
+      (setq this-test (car this-test)))
+    (if (or (not this-test)
+            (not (string-match "#test_" this-test)))
+        (message "Point is not in a test.")
+      (cadr (split-string this-test "#")))))
+
+;;;###autoload
+(defun ruby-compilation-this-test ()
+  "Run the test at point through Ruby compilation."
+  (interactive)
+  (let ((test-name (ruby-compilation-this-test-name)))
+    (pop-to-buffer (ruby-compilation-do
+                    (ruby-compilation-this-test-buffer-name test-name)
+                    (list ruby-compilation-executable
+                          (buffer-file-name)
+                          ruby-compilation-test-name-flag test-name)))))
+
 
 (provide 'ruby-compilation)
 ;;; ruby-compilation.el ends here
