@@ -44,7 +44,6 @@
 
 ;; Clean up function names so they use a common prefix.
 ;; "p" doesn't work at the end of the compilation buffer.
-;; Package it up with dependencies for ELPA.
 
 ;;; Code:
 
