@@ -105,7 +105,9 @@
   "Notify to changes in process state"
   (message "%s - %s" proc (replace-regexp-in-string "\n" "" msg)))
 
+;; Low-level API entry point
 (defun ruby-compilation-do (name cmdlist)
+  "In a compilation buffer identified by NAME, run CMDLIST."
   (let* ((buffer (apply 'make-comint name (car cmdlist) nil (cdr cmdlist)))
          (proc (get-buffer-process buffer)))
     (with-current-buffer buffer
