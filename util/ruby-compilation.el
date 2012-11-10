@@ -61,18 +61,18 @@
 
 (defvar ruby-compilation-error-regexp
   "^\\([[:space:]]*\\|.*\\[\\|[^\*].*at \\)\\[?\\([^[:space:]]*\\):\\([[:digit:]]+\\)[]:)\n]?"
-  "regular expression to match errors in ruby process output")
+  "Regular expression to match errors in ruby process output.")
 
 (defvar ruby-compilation-error-regexp-alist
   `((,ruby-compilation-error-regexp 2 3))
-  "a version of `compilation-error-regexp-alist' to be used in
-  rails logs (should be used with `make-local-variable')")
+  "A version of `compilation-error-regexp-alist' for use in rails logs.
+Should be used with `make-local-variable'.")
 
 (defvar ruby-compilation-executable "ruby"
-  "What bin to use to launch the tests. Override if you use JRuby etc.")
+  "What bin to use to launch the tests.  Override if you use JRuby etc.")
 
 (defvar ruby-compilation-executable-rake "rake"
-  "What bin to use to launch rake. Override if you use JRuby etc.")
+  "What bin to use to launch rake.  Override if you use JRuby etc.")
 
 (defvar ruby-compilation-test-name-flag "-n"
   "What flag to use to specify that you want to run a single test.")
@@ -92,7 +92,7 @@
    (replace-regexp-in-string "\\[/test" "[test" string)))
 
 (defun ruby-compilation--insertion-filter (proc string)
-  "Insert text to buffer stripping ansi color codes"
+  "When PROC sends STRING, strip ansi color codes and insert into buffer."
   (with-current-buffer (process-buffer proc)
     (let ((moving (= (point) (process-mark proc))))
       (save-excursion
@@ -102,7 +102,7 @@
       (if moving (goto-char (process-mark proc))))))
 
 (defun ruby-compilation--sentinel (proc msg)
-  "Notify to changes in process state"
+  "When the state of PROC changes, display the corresponding MSG."
   (message "%s - %s" proc (replace-regexp-in-string "\n" "" msg)))
 
 ;; Low-level API entry point
@@ -126,22 +126,23 @@
       (ruby-compilation-minor-mode t)
       (buffer-name))))
 
+(defun ruby-compilation--skip-past-errors (line-incr)
+  "Repeatedly move LINE-INCR lines forward until the current line is not an error."
+  (while (string-match ruby-compilation-error-regexp (thing-at-point 'line))
+    (forward-line line-incr)))
+
 (defun ruby-compilation-previous-error-group ()
-  "Jump to the start of the previous error group in the current
-compilation buffer."
+  "Jump to the start of the previous error group in the current compilation buffer."
   (interactive)
   (compilation-previous-error 1)
-  (while (string-match ruby-compilation-error-regexp (thing-at-point 'line))
-    (forward-line -1))
+  (ruby-compilation--skip-past-errors -1)
   (forward-line 1)
   (recenter))
 
 (defun ruby-compilation-next-error-group ()
-  "Jump to the start of the previous error group in the current
-compilation buffer."
+  "Jump to the start of the previous error group in the current compilation buffer."
   (interactive)
-  (while (string-match ruby-compilation-error-regexp (thing-at-point 'line))
-    (forward-line 1))
+  (ruby-compilation--skip-past-errors 1)
   (compilation-next-error 1)
   (recenter))
 
@@ -182,9 +183,11 @@ compilation buffer."
 
 ;;;###autoload
 (defun ruby-compilation-run (cmd &optional ruby-options name)
-  "Run a ruby process dumping output to a ruby compilation
-buffer. If supplied, `name' will be used in place of the script
-name to construct the name of the compilation buffer."
+  "Run CMD using `ruby-compilation-executable' in a ruby compilation buffer.
+Argument RUBY-OPTIONS can be used to specify additional
+command line args for ruby.  If supplied, NAME will be used in
+place of the script name to construct the name of the compilation
+buffer."
   (interactive "FRuby Comand: ")
   (let ((name (or name (file-name-nondirectory (car (split-string cmd)))))
 	(cmdlist (append (list ruby-compilation-executable)
@@ -202,7 +205,7 @@ name to construct the name of the compilation buffer."
 ;;; Special handling for rake and capistrano
 
 (defun ruby-compilation--extract-matches (command pattern)
-  "Run COMMAND, and return all the captured matches for PATTERN."
+  "Run COMMAND, and return all the matching strings for PATTERN."
   (delq nil (mapcar #'(lambda(line)
 			(when (string-match pattern line)
                           (match-string 1 line)))
@@ -220,11 +223,15 @@ name to construct the name of the compilation buffer."
 
 ;;;###autoload
 (defun pcomplete/rake ()
+  "Start pcompletion using the list of available rake tasks."
   (pcomplete-here (pcmpl-rake-tasks)))
 
 ;;;###autoload
 (defun ruby-compilation-rake (&optional edit task env-vars)
-  "Run a rake process dumping output to a ruby compilation buffer."
+  "Run a rake process dumping output to a ruby compilation buffer.
+If EDIT is t, prompt the user to edit the command line.  If TASK
+is not supplied, the user will be prompted.  ENV-VARS is an
+optional list of (name . value) pairs which will be passed to rake."
   (interactive "P")
   (let* ((task (concat
 		(or task (if (stringp edit) edit)
@@ -245,11 +252,16 @@ name to construct the name of the compilation buffer."
 
 ;;;###autoload
 (defun pcomplete/cap ()
+  "Start pcompletion using the list of available capistrano tasks."
   (pcomplete-here (pcmpl-cap-tasks)))
 
 ;;;###autoload
 (defun ruby-compilation-cap (&optional edit task env-vars)
-  "Run a capistrano process dumping output to a ruby compilation buffer."
+  "Run a capistrano process dumping output to a ruby compilation buffer.
+If EDIT is t, prompt the user to edit the command line.  If TASK
+is not supplied, the user will be prompted.  ENV-VARS is an
+optional list of (name . value) pairs which will be passed to
+capistrano."
   (interactive "P")
   (let* ((task (concat
 		(or task
@@ -288,7 +300,7 @@ name to construct the name of the compilation buffer."
 ;;; Running tests
 
 (defun ruby-compilation-this-test-buffer-name (test-name)
-  "The name of the buffer in which test-at-point will run."
+  "The name of the buffer in which test-at-point will run TEST-NAME."
   (interactive)
   (if ruby-compilation-reuse-buffers
       (file-name-nondirectory (buffer-file-name))
@@ -297,7 +309,7 @@ name to construct the name of the compilation buffer."
             test-name)))
 
 (defun ruby-compilation-this-test-name ()
-  "Which test are we currently in?"
+  "Return the name of the test at point."
   (let ((this-test (which-function)))
     (when (listp this-test)
       (setq this-test (car this-test)))
@@ -319,4 +331,10 @@ name to construct the name of the compilation buffer."
 
 
 (provide 'ruby-compilation)
+
+;; Local Variables:
+;; coding: utf-8
+;; eval: (checkdoc-minor-mode 1)
+;; End:
+
 ;;; ruby-compilation.el ends here
