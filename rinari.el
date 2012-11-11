@@ -182,12 +182,7 @@ cap command arguments."
   "Return a list of commands supported by the main rails script."
   (let ((rails-script (rinari--rails-path)))
     (when rails-script
-      (let ((s (shell-command-to-string rails-script))
-            (start 0))
-        (save-excursion
-          (loop while (string-match "^ \\([a-z]+\\)[[:space:]].*$" s start)
-                do (setq start (match-end 0))
-                collecting (substring-no-properties (match-string 1 s))))))))
+      (ruby-compilation-extract-output-matches rails-script "^ \\([a-z]+\\)[[:space:]].*$"))))
 
 (defvar rinari-rails-commands-cache nil
   "Cached values for commands that can be used with 'script/rails' in Rails 3.")
