@@ -204,12 +204,12 @@ buffer."
 
 ;;; Special handling for rake and capistrano
 
-(defun ruby-compilation--extract-matches (command pattern)
+(defun ruby-compilation-extract-output-matches (command pattern)
   "Run COMMAND, and return all the matching strings for PATTERN."
   (delq nil (mapcar #'(lambda(line)
 			(when (string-match pattern line)
                           (match-string 1 line)))
-		     (split-string (shell-command-to-string command) "[\n]"))))
+                  (split-string (shell-command-to-string command) "[\n]"))))
 
 (defun ruby-compilation--format-env-vars (pairs)
   "Convert PAIRS of (name . value) into a list of name=value strings."
@@ -219,7 +219,7 @@ buffer."
 
 (defun pcmpl-rake-tasks ()
    "Return a list of all the rake tasks defined in the current projects."
-   (ruby-compilation--extract-matches "rake -T" "rake \\([^ ]+\\)"))
+   (ruby-compilation-extract-output-matches "rake -T" "rake \\([^ ]+\\)"))
 
 ;;;###autoload
 (defun pcomplete/rake ()
@@ -248,7 +248,7 @@ optional list of (name . value) pairs which will be passed to rake."
 
 (defun pcmpl-cap-tasks ()
    "Return a list of all the cap tasks defined in the current project."
-   (ruby-compilation--extract-matches "cap -T" "cap \\([^ ]+\\)"))
+   (ruby-compilation-extract-output-matches "cap -T" "cap \\([^ ]+\\)"))
 
 ;;;###autoload
 (defun pcomplete/cap ()
