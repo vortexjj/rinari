@@ -99,7 +99,8 @@ Should be used with `make-local-variable'.")
 	(goto-char (process-mark proc))
 	(insert (ansi-color-apply (ruby-compilation--adjust-paths string)))
 	(set-marker (process-mark proc) (point)))
-      (if moving (goto-char (process-mark proc))))))
+      (when moving
+        (goto-char (process-mark proc))))))
 
 (defun ruby-compilation--sentinel (proc msg)
   "When the state of PROC changes, display the corresponding MSG."
@@ -111,7 +112,6 @@ Should be used with `make-local-variable'.")
   (let* ((buffer (apply 'make-comint name (car cmdlist) nil (cdr cmdlist)))
          (proc (get-buffer-process buffer)))
     (with-current-buffer buffer
-      ;; set buffer local variables and process ornaments
       (buffer-disable-undo)
       (set-process-sentinel proc 'ruby-compilation--sentinel)
       (set-process-filter proc 'ruby-compilation--insertion-filter)
@@ -274,12 +274,13 @@ capistrano."
 		     task)))
     (if (string-match "shell" task)
         (with-current-buffer (run-ruby (concat "cap " cap-args) "cap")
-          (set (make-local-variable 'inf-ruby-first-prompt-pattern) "^cap> ")
-          (set (make-local-variable 'inf-ruby-prompt-pattern) "^cap> "))
+          (dolist (var '(inf-ruby-first-prompt-pattern inf-ruby-prompt-pattern))
+            (set (make-local-variable var) "^cap> ")))
       (progn ;; handle all cap commands aside from shell
 	(pop-to-buffer (ruby-compilation-do "cap" (cons "cap" (split-string cap-args))))
 	(ruby-capistrano-minor-mode) ;; override some keybindings to make interaction possible
-	(push (cons 'ruby-capistrano-minor-mode ruby-capistrano-minor-mode-map) minor-mode-map-alist)))))
+	(push (cons 'ruby-capistrano-minor-mode ruby-capistrano-minor-mode-map)
+              minor-mode-map-alist)))))
 
 (defvar ruby-capistrano-minor-mode-map
   (let ((map (make-sparse-keymap)))
