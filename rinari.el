@@ -196,8 +196,7 @@ cap command arguments."
 (defun rinari-script (&optional script)
   "Select and run SCRIPT from the script/ directory of the rails application."
   (interactive)
-  (let* ((root (rinari-root))
-         (completions (append (directory-files (concat root "script") nil "^[^.]")
+  (let* ((completions (append (directory-files (rinari-script-path) nil "^[^.]")
                               (rinari-get-rails-commands)))
          (script (or script (jump-completing-read "Script: " completions)))
          (ruby-compilation-error-regexp-alist ;; for jumping to newly created files
