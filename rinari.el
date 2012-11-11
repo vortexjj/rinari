@@ -345,7 +345,6 @@ lets the user edit the server command arguments."
            script)))
 
     ;; Start web server in correct environment.
-    ;; NOTE: Rails 3 has a bug and does not start in any environment but development for now.
     (if rinari-rails-env
         (setq command (concat command " -e " rinari-rails-env)))
 
