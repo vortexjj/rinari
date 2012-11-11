@@ -178,17 +178,16 @@ cap command arguments."
   (ruby-compilation-cap task edit-cmd-args
                         (if rinari-rails-env (list (cons "RAILS_ENV" rinari-rails-env)))))
 
-(defun rinari-discover-rails-commands ()
+(defun rinari--discover-rails-commands ()
   "Return a list of commands supported by the main rails script."
-  (let ((root (rinari-root))
-        (commands nil))
-    (if (file-executable-p (concat root "script/rails"))
-        (let ((s (shell-command-to-string (concat root "script/rails")))
-              (start 0))
-          (save-excursion
-            (loop while (string-match "^ \\([a-z]+\\)[[:space:]].*$" s start)
-                  do (setq start (match-end 0))
-                  collecting (substring-no-properties (match-string 1 s))))))))
+  (let ((rails-script (rinari--rails-path)))
+    (when rails-script
+      (let ((s (shell-command-to-string rails-script))
+            (start 0))
+        (save-excursion
+          (loop while (string-match "^ \\([a-z]+\\)[[:space:]].*$" s start)
+                do (setq start (match-end 0))
+                collecting (substring-no-properties (match-string 1 s))))))))
 
 (defvar rinari-rails-commands-cache nil
   "Cached values for commands that can be used with 'script/rails' in Rails 3.")
@@ -196,14 +195,13 @@ cap command arguments."
 (defun rinari-get-rails-commands ()
   "Return a cached list of commands supported by the main rails script."
   (if (null rinari-rails-commands-cache)
-      (setq rinari-rails-commands-cache (rinari-discover-rails-commands)))
+      (setq rinari-rails-commands-cache (rinari--discover-rails-commands)))
   rinari-rails-commands-cache)
 
 (defun rinari-script (&optional script)
   "Select and run SCRIPT from the script/ directory of the rails application."
   (interactive)
   (let* ((root (rinari-root))
-         (rails3 (file-executable-p (concat root "script/rails")))
          (completions (append (directory-files (concat root "script") nil "^[^.]")
                               (rinari-get-rails-commands)))
          (script (or script (jump-completing-read "Script: " completions)))
@@ -211,10 +209,8 @@ cap command arguments."
           (if (equal script "generate")
               '(("^ +\\(exists\\|create\\) +\\([^[:space:]]+\\.rb\\)" 2 3))
             ruby-compilation-error-regexp-alist))
-         (script (if (file-executable-p (concat root "script/" script))
-                     (concat "script/" script " ")
-                   (concat "script/rails " script " "))))
-    (ruby-compilation-run (concat root script (read-from-minibuffer script)))))
+         (script (concat (rinari--wrap-rails-command script) " ")))
+    (ruby-compilation-run (concat script (read-from-minibuffer script)))))
 
 (defun rinari-test (&optional edit-cmd-args)
   "Run the current ruby function as a test, or run the corresponding test.
@@ -255,6 +251,22 @@ arguments."
             (if (string-match "^test" name)
               name))))))
 
+(defun rinari--rails-path ()
+  "Return the path of the 'rails' command, or nil if not found."
+  (let* ((script (rinari-script-path))
+         (rails-script (expand-file-name "rails" script)))
+    (if (file-exists-p rails-script)
+        rails-script
+      (executable-find "rails"))))
+
+(defun rinari--wrap-rails-command (command)
+  "Given a COMMAND such as 'console', return a suitable command line."
+  (let* ((default-directory (rinari-root))
+         (script (rinari-script-path))
+         (script-command (expand-file-name command script)))
+    (if (file-exists-p script-command)
+        script-command
+      (concat (rinari--rails-path) " " command))))
 
 (defun rinari-console (&optional edit-cmd-args)
   "Run a Rails console in a compilation buffer.
@@ -263,13 +275,7 @@ and source code.  Optional prefix argument EDIT-CMD-ARGS lets the
 user edit the console command arguments."
   (interactive "P")
   (let* ((default-directory (rinari-root))
-         (script (rinari-script-path))
-         (command
-          (expand-file-name
-           (if (file-exists-p (expand-file-name "console" script))
-               "console"
-             "rails console")
-           script)))
+         (command (rinari--wrap-rails-command "console")))
 
     ;; Start console in correct environment.
     (if rinari-rails-env
@@ -333,13 +339,7 @@ errors and source code.  Optional prefix argument EDIT-CMD-ARGS
 lets the user edit the server command arguments."
   (interactive "P")
   (let* ((default-directory (rinari-root))
-         (script (rinari-script-path))
-         (command
-          (expand-file-name
-           (if (file-exists-p (expand-file-name "server" script))
-               "server"
-             "rails server")
-           script)))
+         (command (rinari--wrap-rails-command "server")))
 
     ;; Start web server in correct environment.
     (if rinari-rails-env
@@ -450,13 +450,7 @@ With optional prefix argument ARG, just run `rgrep'."
 (defun rinari-generate (type name)
   "Run the generate command to generate a TYPE called NAME."
   (let* ((default-directory (rinari-root))
-         (script (rinari-script-path))
-         (command
-          (expand-file-name
-           (if (file-exists-p (expand-file-name "generate" script))
-               "generate"
-             "rails generate")
-           script)))
+         (command (rinari--wrap-rails-command "generate")))
     (message (shell-command-to-string (concat command " " type " " (read-from-minibuffer (format "create %s: " type) name))))))
 
 (defvar rinari-ruby-hash-regexp
