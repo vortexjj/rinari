@@ -279,12 +279,9 @@ user edit the console command arguments."
     (setq command (if edit-cmd-args
                       (read-string "Run Ruby: " (concat command " "))
                     command))
-
-    (run-ruby command)
-    (with-current-buffer "*ruby*"
-      (set (make-local-variable 'inf-ruby-prompt-pattern)
-           rinari-inf-ruby-prompt-pattern)
-      (set (make-local-variable 'inf-ruby-first-prompt-pattern) inf-ruby-prompt-pattern)
+    (with-current-buffer (run-ruby command)
+      (dolist (var '(inf-ruby-prompt-pattern inf-ruby-first-prompt-pattern))
+        (set (make-local-variable var) rinari-inf-ruby-prompt-pattern))
       (rinari-launch))))
 
 (defun rinari-sql-buffer-name (env)
