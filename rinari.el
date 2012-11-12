@@ -157,21 +157,13 @@ Optional argument HOME is ignored."
 ;; user functions
 
 (defun rinari-rake (&optional task edit-cmd-args)
-  "Select and run a rake TASK.
-Rake output is dumped to a compilation buffer allowing jumping
-between errors and source code.
-Optional prefix argument EDIT-CMD-ARGS lets the user edit the
-rake command arguments."
+  "Select and run a rake TASK using `ruby-compilation-rake'."
   (interactive "P")
   (ruby-compilation-rake task edit-cmd-args
                          (if rinari-rails-env (list (cons "RAILS_ENV" rinari-rails-env)))))
 
 (defun rinari-cap (&optional task edit-cmd-args)
-  "Select and run a capistrano TASK.
-Cap output is dumped to a compilation buffer allowing jumping
-between errors and source code.
-Optional prefix argument EDIT-CMD-ARGS lets the user edit the
-cap command arguments."
+  "Select and run a capistrano TASK using `ruby-compilation-cap'."
   (interactive "P")
   (ruby-compilation-cap task edit-cmd-args
                         (if rinari-rails-env (list (cons "RAILS_ENV" rinari-rails-env)))))
