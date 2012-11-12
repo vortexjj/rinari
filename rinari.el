@@ -262,8 +262,8 @@ user edit the console command arguments."
          (command (rinari--wrap-rails-command "console")))
 
     ;; Start console in correct environment.
-    (if rinari-rails-env
-        (setq command (concat command " " rinari-rails-env)))
+    (when rinari-rails-env
+      (setq command (concat command " " rinari-rails-env)))
 
     ;; For customization of the console command with prefix arg.
     (setq command (if edit-cmd-args
@@ -326,8 +326,8 @@ lets the user edit the server command arguments."
          (command (rinari--wrap-rails-command "server")))
 
     ;; Start web server in correct environment.
-    (if rinari-rails-env
-        (setq command (concat command " -e " rinari-rails-env)))
+    (when rinari-rails-env
+      (setq command (concat command " -e " rinari-rails-env)))
 
     ;; For customization of the web server command with prefix arg.
     (setq command (if edit-cmd-args
