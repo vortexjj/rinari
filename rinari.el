@@ -199,26 +199,28 @@ Optional argument HOME is ignored."
   "Highlight the passed KEYWORDS in current buffer.
 Use `font-lock-add-keywords' in case of `ruby-mode' or
 `ruby-extra-keywords' in case of Enhanced Ruby Mode."
-  (print "called")
-  (print keywords)
   (if (boundp 'ruby-extra-keywords)
       (progn
 	(setq ruby-extra-keywords (append ruby-extra-keywords keywords))
 	(ruby-local-enable-extra-keywords))
     (font-lock-add-keywords
      nil
-     (list (cons
-	    (concat "\\s-\\(" (mapconcat 'identity keywords "\\|") "\\)\\(\\s-\\|(\\)")
-	    'font-lock-keyword-face)))))
+     (list (list
+            (concat "\\(^\\|[^_:.@$]\\|\\.\\.\\)\\b"
+		    (regexp-opt keywords t)
+		    ruby-keyword-end-re)
+            (list 2 font-lock-keyword-face))))))
 
-(add-hook
- 'ruby-mode-hook
- '(lambda ()
-    (loop for (re keywords) in '(("_controller\\.rb$"   rinari-controller-keywords)
-				 ("app/models/.+\\.rb$" rinari-model-keywords)
-				 ("db/migrate/.+\\.rb$" rinari-migration-keywords))
-	  do (if (string-match-p re (buffer-file-name))
-		 (rinari-highlight-keywords (symbol-value keywords))))))
+(defun rinari-apply-keywords-for-file-type ()
+  "Apply extra font lock keywords specific to models, controllers etc."
+  (when (buffer-file-name)
+    (loop for (re keywords) in `(("_controller\\.rb$"   ,rinari-controller-keywords)
+                                 ("app/models/.+\\.rb$" ,rinari-model-keywords)
+                                 ("db/migrate/.+\\.rb$" ,rinari-migration-keywords))
+          do (when (string-match-p re (buffer-file-name))
+               (rinari-highlight-keywords keywords)))))
+
+(add-hook 'rinari-minor-mode-hook 'rinari-apply-keywords-for-file-type)
 
 ;;--------------------------------------------------------------------------------
 ;; user functions
