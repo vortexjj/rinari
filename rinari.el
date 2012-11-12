@@ -146,14 +146,12 @@ leave this to the environment variables outside of Emacs.")
 (defun rinari-root (&optional dir home)
   "Return the root directory of the project within which DIR is found.
 Optional argument HOME is ignored."
-  (or dir (setq dir default-directory))
-  (if (file-exists-p (expand-file-name
-                      "environment.rb" (expand-file-name "config" dir)))
-      dir
-    (let ((new-dir (expand-file-name (file-name-as-directory "..") dir)))
+  (let ((default-directory (or dir default-directory)))
+    (if (file-exists-p (expand-file-name "environment.rb" (expand-file-name "config")))
+        default-directory
       ;; regexp to match windows roots, tramp roots, or regular posix roots
-      (unless (string-match "\\(^[[:alpha:]]:/$\\|^/[^\/]+:/?$\\|^/$\\)" dir)
-        (rinari-root new-dir)))))
+      (unless (string-match "\\(^[[:alpha:]]:/$\\|^/[^\/]+:/?$\\|^/$\\)" default-directory)
+        (rinari-root (expand-file-name (file-name-as-directory "..")))))))
 
 ;;--------------------------------------------------------------------------------
 ;; user functions
