@@ -94,6 +94,9 @@
   "Path to your TAGS file inside of your rails project.  See `tags-file-name'."
   :group 'rinari)
 
+(defcustom rinari-fontify-rails-keywords t
+  "When non-nil, fontify keywords such as 'before_filter', 'url_for'.")
+
 (defcustom rinari-controller-keywords
   '("logger" "polymorphic_path" "polymorphic_url" "mail" "render" "attachments"
     "default" "helper" "helper_attr" "helper_method" "layout" "url_for"
@@ -118,23 +121,23 @@
   :type '(repeat string))
 
 (defcustom rinari-model-keywords
- '("default_scope" "named_scope" "scope" "serialize" "belongs_to" "has_one"
-   "has_many" "has_and_belongs_to_many" "composed_of" "accepts_nested_attributes_for"
-   "before_create" "before_destroy" "before_save" "before_update" "before_validation"
-   "before_validation_on_create" "before_validation_on_update" "after_create"
-   "after_destroy" "after_save" "after_update" "after_validation"
-   "after_validation_on_create" "after_validation_on_update" "around_create"
-   "around_destroy" "around_save" "around_update" "after_commit" "after_find"
-   "after_initialize" "after_rollback" "after_touch" "attr_accessible"
-   "attr_protected" "attr_readonly" "validates" "validate" "validate_on_create"
-   "validate_on_update" "validates_acceptance_of" "validates_associated"
-   "validates_confirmation_of" "validates_each" "validates_exclusion_of"
-   "validates_format_of" "validates_inclusion_of" "validates_length_of"
-   "validates_numericality_of" "validates_presence_of" "validates_size_of"
-   "validates_uniqueness_of" "validates_with")
- "List of keywords to highlight for models"
- :group 'rinari
- :type '(repeat string))
+  '("default_scope" "named_scope" "scope" "serialize" "belongs_to" "has_one"
+    "has_many" "has_and_belongs_to_many" "composed_of" "accepts_nested_attributes_for"
+    "before_create" "before_destroy" "before_save" "before_update" "before_validation"
+    "before_validation_on_create" "before_validation_on_update" "after_create"
+    "after_destroy" "after_save" "after_update" "after_validation"
+    "after_validation_on_create" "after_validation_on_update" "around_create"
+    "around_destroy" "around_save" "around_update" "after_commit" "after_find"
+    "after_initialize" "after_rollback" "after_touch" "attr_accessible"
+    "attr_protected" "attr_readonly" "validates" "validate" "validate_on_create"
+    "validate_on_update" "validates_acceptance_of" "validates_associated"
+    "validates_confirmation_of" "validates_each" "validates_exclusion_of"
+    "validates_format_of" "validates_inclusion_of" "validates_length_of"
+    "validates_numericality_of" "validates_presence_of" "validates_size_of"
+    "validates_uniqueness_of" "validates_with")
+  "List of keywords to highlight for models"
+  :group 'rinari
+  :type '(repeat string))
 
 (defvar rinari-minor-mode-hook nil
   "*Hook for customising Rinari.")
@@ -199,26 +202,28 @@ Optional argument HOME is ignored."
   "Highlight the passed KEYWORDS in current buffer.
 Use `font-lock-add-keywords' in case of `ruby-mode' or
 `ruby-extra-keywords' in case of Enhanced Ruby Mode."
-  (print "called")
-  (print keywords)
   (if (boundp 'ruby-extra-keywords)
       (progn
 	(setq ruby-extra-keywords (append ruby-extra-keywords keywords))
 	(ruby-local-enable-extra-keywords))
     (font-lock-add-keywords
      nil
-     (list (cons
-	    (concat "\\s-\\(" (mapconcat 'identity keywords "\\|") "\\)\\(\\s-\\|(\\)")
-	    'font-lock-keyword-face)))))
+     (list (list
+            (concat "\\(^\\|[^_:.@$]\\|\\.\\.\\)\\b"
+		    (regexp-opt keywords t)
+		    ruby-keyword-end-re)
+            (list 2 font-lock-keyword-face))))))
 
-(add-hook
- 'ruby-mode-hook
- '(lambda ()
-    (loop for (re keywords) in '(("_controller\\.rb$"   rinari-controller-keywords)
-				 ("app/models/.+\\.rb$" rinari-model-keywords)
-				 ("db/migrate/.+\\.rb$" rinari-migration-keywords))
-	  do (if (string-match-p re (buffer-file-name))
-		 (rinari-highlight-keywords (symbol-value keywords))))))
+(defun rinari-apply-keywords-for-file-type ()
+  "Apply extra font lock keywords specific to models, controllers etc."
+  (when (and rinari-fontify-rails-keywords (buffer-file-name))
+    (loop for (re keywords) in `(("_controller\\.rb$"   ,rinari-controller-keywords)
+                                 ("app/models/.+\\.rb$" ,rinari-model-keywords)
+                                 ("db/migrate/.+\\.rb$" ,rinari-migration-keywords))
+          do (when (string-match-p re (buffer-file-name))
+               (rinari-highlight-keywords keywords)))))
+
+(add-hook 'rinari-minor-mode-hook 'rinari-apply-keywords-for-file-type)
 
 ;;--------------------------------------------------------------------------------
 ;; user functions
