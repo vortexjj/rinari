@@ -207,7 +207,9 @@ Use `font-lock-add-keywords' in case of `ruby-mode' or
 	(ruby-local-enable-extra-keywords))
     (font-lock-add-keywords
      nil
-     (mapcar (lambda (word) (cons word 'font-lock-keyword-face)) keywords))))
+     (list (cons
+	    (concat "\\s-\\(" (mapconcat 'identity keywords "\\|") "\\)\\(\\s-\\|(\\)")
+	    'font-lock-keyword-face)))))
 
 (add-hook
  'ruby-mode-hook
