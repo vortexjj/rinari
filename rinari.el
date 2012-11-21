@@ -316,13 +316,20 @@ arguments."
       (executable-find "rails"))))
 
 (defun rinari--wrap-rails-command (command)
-  "Given a COMMAND such as 'console', return a suitable command line."
+  "Given a COMMAND such as 'console', return a suitable command line.
+Where the corresponding script is executable, it will be run
+as-is.  Otherwise, as can be the case on Windows, the command will
+be prepended with `ruby-compilation-executable'."
   (let* ((default-directory (rinari-root))
          (script (rinari-script-path))
-         (script-command (expand-file-name command script)))
-    (if (file-exists-p script-command)
-        script-command
-      (concat (rinari--rails-path) " " command))))
+         (script-command (expand-file-name command script))
+         (command-line
+          (if (file-exists-p script-command)
+              script-command
+            (concat (rinari--rails-path) " " command))))
+    (if (file-executable-p (first (split-string-and-unquote command-line)))
+        command-line
+      (concat ruby-compilation-executable " " command-line))))
 
 (defun rinari-console (&optional edit-cmd-args)
   "Run a Rails console in a compilation buffer.
