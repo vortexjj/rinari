@@ -348,7 +348,7 @@ user edit the console command arguments."
     (setq command (if edit-cmd-args
                       (read-string "Run Ruby: " (concat command " "))
                     command))
-    (with-current-buffer (run-ruby command)
+    (with-current-buffer (run-ruby command "rails console")
       (dolist (var '(inf-ruby-prompt-pattern inf-ruby-first-prompt-pattern))
         (set (make-local-variable var) rinari-inf-ruby-prompt-pattern))
       (rinari-launch))))
