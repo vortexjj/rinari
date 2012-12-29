@@ -470,19 +470,21 @@ With optional prefix argument NO-EQUALS, don't include an '='."
           (rinari-insert-partial partial-name ending))
       (message "not in a view"))))
 
+(defun rinari-insert-output (ruby-expr ending)
+  "Insert view code which outputs RUBY-EXPR, suitable for the file's ENDING."
+  (let ((surround
+         (cond
+          ((string-match "\\.erb" ending)
+           (cons "<%= " " %>"))
+          ((string-match "\\.haml" ending)
+           (cons "= " " ")))))
+    (insert (concat (car surround) ruby-expr (cdr surround) "\n"))))
+
 (defun rinari-insert-partial (partial-name ending)
   "Insert a call to PARTIAL-NAME, formatted for the file's ENDING.
 
 Supported markup languages are: Erb, Haml"
-  (let ((prefix) (suffix))
-    (cond
-     ((string-match "\\(html\\)?\\.erb" ending)
-      (setq prefix "<%= ")
-      (setq suffix " %>"))
-     ((string-match "\\(html\\)?\\.haml" ending)
-      (setq prefix "= ")
-      (setq suffix " ")))
-    (insert (concat prefix "render :partial => \"" partial-name "\"" suffix "\n"))))
+  (rinari-insert-output (concat "render :partial => \"" partial-name "\"") ending))
 
 (defun rinari-goto-partial ()
   "Visits the partial that is called on the current line."
