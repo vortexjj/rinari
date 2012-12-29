@@ -245,13 +245,15 @@ Use `font-lock-add-keywords' in case of `ruby-mode' or
   "Select and run a rake TASK using `ruby-compilation-rake'."
   (interactive "P")
   (ruby-compilation-rake task edit-cmd-args
-                         (if rinari-rails-env (list (cons "RAILS_ENV" rinari-rails-env)))))
+                         (when rinari-rails-env
+                           (list (cons "RAILS_ENV" rinari-rails-env)))))
 
 (defun rinari-cap (&optional task edit-cmd-args)
   "Select and run a capistrano TASK using `ruby-compilation-cap'."
   (interactive "P")
   (ruby-compilation-cap task edit-cmd-args
-                        (if rinari-rails-env (list (cons "RAILS_ENV" rinari-rails-env)))))
+                        (when rinari-rails-env
+                          (list (cons "RAILS_ENV" rinari-rails-env)))))
 
 (defun rinari--discover-rails-commands ()
   "Return a list of commands supported by the main rails script."
@@ -264,8 +266,8 @@ Use `font-lock-add-keywords' in case of `ruby-mode' or
 
 (defun rinari-get-rails-commands ()
   "Return a cached list of commands supported by the main rails script."
-  (if (null rinari-rails-commands-cache)
-      (setq rinari-rails-commands-cache (rinari--discover-rails-commands)))
+  (when (null rinari-rails-commands-cache)
+    (setq rinari-rails-commands-cache (rinari--discover-rails-commands)))
   rinari-rails-commands-cache)
 
 (defun rinari-script (&optional script)
@@ -298,27 +300,28 @@ arguments."
          (ruby-options (list "-I" (expand-file-name "test" (rinari-root)) path))
          (default-command (mapconcat
                            'identity
-                           (append (list path) (if fn (list "--name" (concat "/" fn "/"))))
+                           (append (list path) (when fn (list "--name" (concat "/" fn "/"))))
                            " "))
          (command (if edit-cmd-args
                       (read-string "Run w/Compilation: " default-command)
                     default-command)))
-    (if path (ruby-compilation-run command ruby-options)
+    (if path
+        (ruby-compilation-run command ruby-options)
       (message "no test available"))))
 
 (defun rinari-test-function-name()
   "Return the name of the test function at point, or nil if not found."
   (save-excursion
-    (if (re-search-backward (concat "^[ \t]*\\(def\\|test\\)[ \t]+"
-                                    "\\([\"'].*?[\"']\\|" ruby-symbol-re "*\\)"
-                                    "[ \t]*") nil t)
-        (let ((name (match-string 2)))
-          (if (string-match "^[\"']\\(.*\\)[\"']$" name)
-              (replace-regexp-in-string
-               "\\?" "\\\\\\\\?"
-               (replace-regexp-in-string " +" "_" (match-string 1 name)))
-            (if (string-match "^test" name)
-              name))))))
+    (when (re-search-backward (concat "^[ \t]*\\(def\\|test\\)[ \t]+"
+                                      "\\([\"'].*?[\"']\\|" ruby-symbol-re "*\\)"
+                                      "[ \t]*") nil t)
+      (let ((name (match-string 2)))
+        (if (string-match "^[\"']\\(.*\\)[\"']$" name)
+            (replace-regexp-in-string
+             "\\?" "\\\\\\\\?"
+             (replace-regexp-in-string " +" "_" (match-string 1 name)))
+          (when (string-match "^test" name)
+            name))))))
 
 (defun rinari--rails-path ()
   "Return the path of the 'rails' command, or nil if not found."
@@ -391,7 +394,7 @@ Looks up login information from your conf/database.sql file."
              (adapter (or (cdr (assoc "adapter" database-alist)) "sqlite"))
              (sql-user (or (cdr (assoc "username" database-alist)) "root"))
              (sql-password (or (cdr (assoc "password" database-alist)) ""))
-             (sql-password (if (> (length sql-password) 0) sql-password nil))
+             (sql-password (when (> (length sql-password) 0) sql-password))
              (sql-database (or (cdr (assoc "database" database-alist))
                                (concat (file-name-nondirectory (rinari-root))
                                        "_" environment)))
@@ -444,8 +447,10 @@ server command arguments."
   "Insert an erb skeleton at point.
 With optional prefix argument NO-EQUALS, don't include an '='."
   (interactive "P")
-  (insert "<%") (if no-equals (insert "  -") (insert "=  ")) (insert "%>")
-  (if no-equals (backward-char 4) (backward-char 3)))
+  (insert "<%")
+  (insert (if no-equals "  -" "=  "))
+  (insert "%>")
+  (backward-char (if no-equals 4 3)))
 
 (defun rinari-extract-partial (begin end partial-name)
   "Extracts the region from BEGIN to END into a partial called PARTIAL-NAME."
@@ -500,11 +505,11 @@ Supported markup languages are: Erb, Haml"
 With optional prefix argument ARG, just run `rgrep'."
   (interactive "P")
   (grep-compute-defaults)
-  (if arg (call-interactively 'rgrep)
-    (let ((query))
-      (if mark-active
-          (setq query (buffer-substring-no-properties (point) (mark)))
-        (setq query (thing-at-point 'word)))
+  (if arg
+      (call-interactively 'rgrep)
+    (let ((query (if mark-active
+                     (buffer-substring-no-properties (point) (mark))
+                   (thing-at-point 'word))))
       (funcall 'rgrep (read-from-minibuffer "search for: " query)
                rinari-rgrep-file-endings (rinari-root)))))
 
@@ -541,17 +546,17 @@ With optional prefix argument ARG, just run `rgrep'."
     (save-excursion
       (while (and (< (point) end)
                   (re-search-forward rinari-ruby-hash-regexp end t))
-        (if (> (length (match-string 3)) 1)
-            (case (intern (match-string 1))
-              (:partial
-               (let ((partial (match-string 3)))
-                 (if (string-match "\\(.+\\)/\\(.+\\)" partial)
-                     (progn
-                       (setf controller (match-string 1 partial))
-                       (setf action (concat "_" (match-string 2 partial))))
-                   (setf action (concat "_" partial)))))
-              (:action  (setf action (match-string 3)))
-              (:controller (setf controller (match-string 3)))))))
+        (when (> (length (match-string 3)) 1)
+          (case (intern (match-string 1))
+            (:partial
+             (let ((partial (match-string 3)))
+               (if (string-match "\\(.+\\)/\\(.+\\)" partial)
+                   (progn
+                     (setf controller (match-string 1 partial))
+                     (setf action (concat "_" (match-string 2 partial))))
+                 (setf action (concat "_" partial)))))
+            (:action  (setf action (match-string 3)))
+            (:controller (setf controller (match-string 3)))))))
     (cons controller action)))
 
 (defun rinari-which-render (renders)
@@ -643,7 +648,7 @@ and redirects."
                (method (and file raw-method ;; action
                             (string-match "#\\(.*\\)" raw-method)
                             (match-string 1 raw-method))))
-          (if (and file method) (rinari-follow-controller-and-action file method))))
+          (when (and file method) (rinari-follow-controller-and-action file method))))
       . "app/views/\\1/\\2.*")
      ("app/controllers/\\1_controller.rb"      . "app/views/\\1/.*")
      ("app/helpers/\\1_helper.rb"              . "app/views/\\1/.*")
@@ -789,7 +794,7 @@ and redirects."
                 ,specs
                 rinari-root
                 ,(format "Go to the most logical %S given the current location" name)
-                ,(if make `(quote ,make))
+                ,(when make `(quote ,make))
                 'ruby-add-log-current-method))))
    schema))
 (rinari-apply-jump-schema rinari-jump-schema)
