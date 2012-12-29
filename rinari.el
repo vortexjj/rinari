@@ -193,11 +193,11 @@ leave this to the environment variables outside of Emacs.")
   "Parse key/value pairs out of a simple yaml file."
   (let ((start (point))
         (end (save-excursion (re-search-forward "^[^:]*$" nil t) (point)))
-        alist)
+        pairs)
     (while (and (< (point) end)
                 (re-search-forward "^ *\\(.*\\): \\(.*\\)$" nil t))
-      (setf alist (cons (cons (match-string 1) (match-string 2)) alist)))
-    alist))
+      (push (cons (match-string 1) (match-string 2)) pairs))
+    pairs))
 
 (defun rinari-root (&optional dir home)
   "Return the root directory of the project within which DIR is found.
@@ -401,13 +401,17 @@ Looks up login information from your conf/database.sql file."
              (server (or (cdr (assoc "host" database-alist)) "localhost"))
              (port (cdr (assoc "port" database-alist)))
              (sql-server (if port (concat server ":" port) server)))
-        (cond ((string-match "mysql" adapter)
-               (setf adapter "mysql"))
-              ((string-match "sqlite" adapter)
-               (setf adapter "sqlite"))
-              ((string-match "postgresql" adapter)
-               (setf adapter "postgres")))
-        (eval (list (intern (concat "sql-" adapter))))
+
+        (funcall
+         (intern (concat "sql-"
+                         (cond
+                          ((string-match "mysql" adapter)
+                           "mysql")
+                          ((string-match "sqlite" adapter)
+                           "sqlite")
+                          ((string-match "postgresql" adapter)
+                           "postgres")
+                          (t adapter)))))
         (rename-buffer sql-buffer)
         (rinari-launch)))))
 
@@ -492,10 +496,11 @@ Supported markup languages are: Erb, Haml"
   (let ((line (buffer-substring-no-properties (line-beginning-position) (line-end-position))))
     (when (string-match rinari-partial-regex line)
       (setq line (match-string 2 line))
-      (let ((file))
-        (if (string-match "/" line)
-            (setq file (concat (rinari-root) "app/views/" (replace-regexp-in-string "\\([^/]+\\)/\\([^/]+\\)$" "\\1/_\\2" line)))
-          (setq file (concat default-directory "_" line)))
+      (let ((file
+             (if (string-match "/" line)
+                 (concat (rinari-root) "app/views/"
+                         (replace-regexp-in-string "\\([^/]+\\)/\\([^/]+\\)$" "\\1/_\\2" line))
+               (concat default-directory "_" line))))
         (find-file (concat file (rinari-ending)))))))
 
 (defvar rinari-rgrep-file-endings
@@ -774,13 +779,12 @@ and redirects."
    (by-context
     ";"
     (((lambda () ;; Find-by-Context
-        (let ((path (buffer-file-name))
-              cv)
+        (let ((path (buffer-file-name)))
           (when (string-match ".*/\\(.+?\\)/\\(.+?\\)\\..*" path)
-            (setf cv (cons (match-string 1 path) (match-string 2 path)))
-            (when (re-search-forward "<%=[ \n\r]*render(? *" nil t)
-              (setf cv (rinari-ruby-values-from-render (car cv) (cdr cv)))
-              (list (car cv) (cdr cv))))))
+            (let ((cv (cons (match-string 1 path) (match-string 2 path))))
+              (when (re-search-forward "<%=[ \n\r]*render(? *" nil t)
+                (setf cv (rinari-ruby-values-from-render (car cv) (cdr cv)))
+                (list (car cv) (cdr cv)))))))
       . "app/views/\\1/\\2.*"))))
  "Jump schema for rinari.")
 
