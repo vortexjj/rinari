@@ -191,11 +191,9 @@ leave this to the environment variables outside of Emacs.")
 
 (defun rinari-parse-yaml ()
   "Parse key/value pairs out of a simple yaml file."
-  (let ((start (point))
-        (end (save-excursion (re-search-forward "^[^:]*$" nil t) (point)))
+  (let ((end (save-excursion (re-search-forward "^[^:]*$" nil t) (point)))
         pairs)
-    (while (and (< (point) end)
-                (re-search-forward "^ *\\(.*\\): \\(.*\\)$" nil t))
+    (while (re-search-forward "^ *\\(.*\\): \\(.*\\)$" end t)
       (push (cons (match-string 1) (match-string 2)) pairs))
     pairs))
 
