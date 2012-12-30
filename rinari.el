@@ -865,8 +865,7 @@ enable rinari in buffers using those modes."
                  (not (memq major-mode rinari-exclude-major-modes))))
     (rinari-launch)))
 
-(dolist (hook '(mumamo-after-change-major-mode-hook dired-mode-hook))
-  (add-hook hook 'rinari-launch))
+(add-hook 'mumamo-after-change-major-mode-hook 'rinari-launch)
 
 (defadvice cd (after rinari-on-cd activate)
   "Call `rinari-launch' when changing directories.
