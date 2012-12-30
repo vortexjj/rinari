@@ -885,7 +885,7 @@ into and out of rails project directories."
   rinari-minor-mode rinari-launch-maybe)
 
 ;;;###autoload
-(progn
+(unless (featurep 'rinari-autoloads)
   (message "Warning: Calling global-rinari-mode automatically for you. Future versions of rinari will require you to do this yourself.")
   (global-rinari-mode))
 
