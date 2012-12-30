@@ -233,8 +233,7 @@ Use `font-lock-add-keywords' in case of `ruby-mode' or
                (rinari-highlight-keywords keywords)))))
 
 
-;; TODO: only in ruby mode!!
-(add-hook 'rinari-minor-mode-hook 'rinari-apply-keywords-for-file-type)
+(add-hook 'ruby-mode-hook 'rinari-apply-keywords-for-file-type)
 
 ;;--------------------------------------------------------------------------------
 ;; user functions
