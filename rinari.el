@@ -884,11 +884,6 @@ into and out of rails project directories."
 (define-global-minor-mode global-rinari-mode
   rinari-minor-mode rinari-launch-maybe)
 
-;;;###autoload
-(unless global-rinari-mode
-  (message "Warning: Calling global-rinari-mode automatically for you. Future versions of rinari will require you to do this yourself.")
-  (global-rinari-mode))
-
 (provide 'rinari)
 
 ;; Local Variables:
