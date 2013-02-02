@@ -202,11 +202,12 @@ leave this to the environment variables outside of Emacs.")
   "Return the root directory of the project within which DIR is found.
 Optional argument HOME is ignored."
   (let ((default-directory (or dir default-directory)))
-    (if (file-exists-p (expand-file-name "environment.rb" (expand-file-name "config")))
-        default-directory
-      ;; regexp to match windows roots, tramp roots, or regular posix roots
-      (unless (string-match "\\(^[[:alpha:]]:/$\\|^/[^\/]+:/?$\\|^/$\\)" default-directory)
-        (rinari-root (expand-file-name (file-name-as-directory "..")))))))
+    (when (file-directory-p default-directory)
+      (if (file-exists-p (expand-file-name "environment.rb" (expand-file-name "config")))
+          default-directory
+        ;; regexp to match windows roots, tramp roots, or regular posix roots
+        (unless (string-match "\\(^[[:alpha:]]:/$\\|^/[^\/]+:/?$\\|^/$\\)" default-directory)
+          (rinari-root (expand-file-name (file-name-as-directory ".."))))))))
 
 (defun rinari-highlight-keywords (keywords)
   "Highlight the passed KEYWORDS in current buffer.
