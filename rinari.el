@@ -885,16 +885,13 @@ and redirects."
   "Call function `rinari-minor-mode' if inside a rails project.
 Otherwise, disable that minor mode if currently enabled."
   (interactive)
-  (let* ((root (rinari-root))
-         (r-tags-path (concat root rinari-tags-file-name)))
+  (let ((root (rinari-root)))
     (if root
-        (progn
+        (let ((r-tags-path (concat root rinari-tags-file-name)))
           (set (make-local-variable 'tags-file-name)
                (and (file-exists-p r-tags-path) r-tags-path))
-          (run-hooks 'rinari-minor-mode-hook)
           (rinari-minor-mode t))
-      (when (and (fboundp 'rinari-minor-mode) rinari-minor-mode)
-        (rinari-minor-mode)))))
+      (rinari-minor-mode -1))))
 
 (defun rinari-launch-maybe ()
   "Call `rinari-launch' if customized to do so.
