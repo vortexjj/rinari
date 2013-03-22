@@ -4,7 +4,7 @@
 
 ;; Author: Eric Schulte
 ;; URL: https://github.com/eschulte/rinari
-;; Version: 0.9
+;; Version: 0.10
 ;; Created: 2008-08-23
 ;; Keywords: test convenience
 ;; Package-Requires: ((inf-ruby "2.2.1"))
@@ -112,6 +112,10 @@ Should be used with `make-local-variable'.")
   (save-some-buffers (not compilation-ask-about-save)
                      (when (boundp 'compilation-save-buffers-predicate)
                        compilation-save-buffers-predicate))
+  (let ((this-dir default-directory)
+        (existing-buffer (get-buffer (concat "*" name "*"))))
+    (with-current-buffer existing-buffer
+      (setq default-directory this-dir)))
   (let* ((buffer (apply 'make-comint name (car cmdlist) nil (cdr cmdlist)))
          (proc (get-buffer-process buffer)))
     (with-current-buffer buffer
