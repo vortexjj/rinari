@@ -37,7 +37,7 @@
 ;; ruby-compilation-run
 ;; ruby-compilation-rake
 ;; ruby-compilation-this-buffer (C-x t)
-;; ruby-compilation-this-test (C-x C-t)
+;; ruby-compilation-this-test (C-x T)
 ;;
 
 ;;; TODO:
@@ -178,7 +178,7 @@ Should be used with `make-local-variable'.")
 (eval-after-load 'ruby-mode
   '(progn
      (define-key ruby-mode-map (kbd "C-x t") 'ruby-compilation-this-buffer)
-     (define-key ruby-mode-map (kbd "C-x C-t") 'ruby-compilation-this-test)))
+     (define-key ruby-mode-map (kbd "C-x T") 'ruby-compilation-this-test)))
 
 ;; So we don't get warnings with .dir-settings.el files
 (dolist (executable (list "jruby" "rbx" "ruby1.9" "ruby1.8" "ruby"))
