@@ -891,7 +891,8 @@ Otherwise, disable that minor mode if currently enabled."
           (set (make-local-variable 'tags-file-name)
                (and (file-exists-p r-tags-path) r-tags-path))
           (rinari-minor-mode t))
-      (rinari-minor-mode -1))))
+      (when rinari-minor-mode
+        (rinari-minor-mode -1)))))
 
 (defun rinari-launch-maybe ()
   "Call `rinari-launch' if customized to do so.
