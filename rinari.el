@@ -215,14 +215,14 @@ Use `font-lock-add-keywords' in case of `ruby-mode' or
 `ruby-extra-keywords' in case of Enhanced Ruby Mode."
   (if (boundp 'ruby-extra-keywords)
       (progn
-	(setq ruby-extra-keywords (append ruby-extra-keywords keywords))
-	(ruby-local-enable-extra-keywords))
+        (setq ruby-extra-keywords (append ruby-extra-keywords keywords))
+        (ruby-local-enable-extra-keywords))
     (font-lock-add-keywords
      nil
      (list (list
             (concat "\\(^\\|[^_:.@$]\\|\\.\\.\\)\\b"
-		    (regexp-opt keywords t)
-		    ruby-keyword-end-re)
+                    (regexp-opt keywords t)
+                    ruby-keyword-end-re)
             (list 2 'font-lock-builtin-face))))))
 
 (defun rinari-apply-keywords-for-file-type ()
@@ -933,6 +933,7 @@ into and out of rails project directories."
 
 ;; Local Variables:
 ;; coding: utf-8
+;; indent-tabs-mode: nil
 ;; byte-compile-warnings: (not cl-functions)
 ;; eval: (checkdoc-minor-mode 1)
 ;; End:

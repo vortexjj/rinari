@@ -198,7 +198,7 @@ place of the script name to construct the name of the compilation
 buffer."
   (interactive "FRuby Comand: ")
   (let ((name (or name (file-name-nondirectory (car (split-string cmd)))))
-	(cmdlist (append (list ruby-compilation-executable)
+        (cmdlist (append (list ruby-compilation-executable)
                          ruby-options
                          (split-string (expand-file-name cmd)))))
     (pop-to-buffer (ruby-compilation-do name cmdlist))))
@@ -215,7 +215,7 @@ buffer."
 (defun ruby-compilation-extract-output-matches (command pattern)
   "Run COMMAND, and return all the matching strings for PATTERN."
   (delq nil (mapcar #'(lambda(line)
-			(when (string-match pattern line)
+                        (when (string-match pattern line)
                           (match-string 1 line)))
                   (split-string (shell-command-to-string command) "[\n]"))))
 
@@ -242,16 +242,16 @@ is not supplied, the user will be prompted.  ENV-VARS is an
 optional list of (name . value) pairs which will be passed to rake."
   (interactive "P")
   (let* ((task (concat
-		(or task (if (stringp edit) edit)
-		    (completing-read "Rake: " (pcmpl-rake-tasks)))
-		" "
-		(ruby-compilation--format-env-vars env-vars)))
-	 (rake-args (if (and edit (not (stringp edit)))
-			(read-from-minibuffer "Edit Rake Command: " (concat task " "))
-		      task)))
+                (or task (if (stringp edit) edit)
+                    (completing-read "Rake: " (pcmpl-rake-tasks)))
+                " "
+                (ruby-compilation--format-env-vars env-vars)))
+         (rake-args (if (and edit (not (stringp edit)))
+                        (read-from-minibuffer "Edit Rake Command: " (concat task " "))
+                      task)))
     (pop-to-buffer (ruby-compilation-do
-		    "rake" (cons ruby-compilation-executable-rake
-				 (split-string rake-args))))))
+                    "rake" (cons ruby-compilation-executable-rake
+                                 (split-string rake-args))))))
 
 
 (defun pcmpl-cap-tasks ()
@@ -272,22 +272,22 @@ optional list of (name . value) pairs which will be passed to
 capistrano."
   (interactive "P")
   (let* ((task (concat
-		(or task
+                (or task
                     (when (stringp edit) edit)
-		    (completing-read "Cap: " (pcmpl-cap-tasks)))
-		" "
+                    (completing-read "Cap: " (pcmpl-cap-tasks)))
+                " "
                 (ruby-compilation--format-env-vars env-vars)))
-	 (cap-args (if (and edit (not (stringp edit)))
-		       (read-from-minibuffer "Edit Cap Command: " (concat task " "))
-		     task)))
+         (cap-args (if (and edit (not (stringp edit)))
+                       (read-from-minibuffer "Edit Cap Command: " (concat task " "))
+                     task)))
     (if (string-match "shell" task)
         (with-current-buffer (run-ruby (concat "cap " cap-args) "cap")
           (dolist (var '(inf-ruby-first-prompt-pattern inf-ruby-prompt-pattern))
             (set (make-local-variable var) "^cap> ")))
       (progn ;; handle all cap commands aside from shell
-	(pop-to-buffer (ruby-compilation-do "cap" (cons "cap" (split-string cap-args))))
-	(ruby-capistrano-minor-mode) ;; override some keybindings to make interaction possible
-	(push (cons 'ruby-capistrano-minor-mode ruby-capistrano-minor-mode-map)
+        (pop-to-buffer (ruby-compilation-do "cap" (cons "cap" (split-string cap-args))))
+        (ruby-capistrano-minor-mode) ;; override some keybindings to make interaction possible
+        (push (cons 'ruby-capistrano-minor-mode ruby-capistrano-minor-mode-map)
               minor-mode-map-alist)))))
 
 (defvar ruby-capistrano-minor-mode-map
@@ -343,6 +343,7 @@ capistrano."
 
 ;; Local Variables:
 ;; coding: utf-8
+;; indent-tabs-mode: nil
 ;; eval: (checkdoc-minor-mode 1)
 ;; End:
 
