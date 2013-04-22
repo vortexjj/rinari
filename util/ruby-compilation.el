@@ -4,7 +4,7 @@
 
 ;; Author: Eric Schulte
 ;; URL: https://github.com/eschulte/rinari
-;; Version: 0.15
+;; Version: 0.16
 ;; Created: 2008-08-23
 ;; Keywords: test convenience
 ;; Package-Requires: ((inf-ruby "2.2.1"))
@@ -115,7 +115,6 @@ Should be used with `make-local-variable'.")
   "Ruby compilation mode."
   (progn
     (set (make-local-variable 'compilation-error-regexp-alist) ruby-compilation-error-regexp-alist)
-    (set (make-local-variable 'compilation-error-regexp-alist-alist) nil)
     (add-hook 'compilation-filter-hook 'ruby-compilation-filter nil t)
     ;; Set any bound buffer name buffer-locally
     (setq ruby-compilation--buffer-name ruby-compilation--buffer-name)
