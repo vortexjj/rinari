@@ -8,7 +8,7 @@
 ;; Created: 2006-11-10
 ;; Keywords: ruby, rails, project, convenience, web
 ;; EmacsWiki: Rinari
-;; Package-Requires: ((ruby-mode "1.0") (inf-ruby "2.2.1") (ruby-compilation "0.8") (jump "2.0"))
+;; Package-Requires: ((ruby-mode "1.0") (inf-ruby "2.2.1") (ruby-compilation "0.16") (jump "2.0"))
 
 ;; This file is NOT part of GNU Emacs.
 
@@ -281,8 +281,10 @@ Use `font-lock-add-keywords' in case of `ruby-mode' or
                 ("^ +\\(exists\\) +\\([^[:space:]]+\\)" 2 3 nil 0 1)
                 ("^ +\\(conflict\\) +\\([^[:space:]]+\\)" 2 3 nil 0 0))
             ruby-compilation-error-regexp-alist))
-         (script (concat (rinari--wrap-rails-command script) " ")))
-    (ruby-compilation-run (concat script (read-from-minibuffer script)))))
+         (script-path (concat (rinari--wrap-rails-command script) " ")))
+    (ruby-compilation-run (concat script-path (read-from-minibuffer script))
+                          nil
+                          (concat "rails " script))))
 
 (defun rinari-test (&optional edit-cmd-args)
   "Run the current ruby function as a test, or run the corresponding test.
