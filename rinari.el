@@ -282,6 +282,8 @@ Use `font-lock-add-keywords' in case of `ruby-mode' or
                 ("^ +\\(conflict\\) +\\([^[:space:]]+\\)" 2 3 nil 0 0))
             ruby-compilation-error-regexp-alist))
          (script-path (concat (rinari--wrap-rails-command script) " ")))
+    (when (string-match-p "^\\(db\\)?console" script)
+      (error "Use the dedicated rinari function to run this interactive script"))
     (ruby-compilation-run (concat script-path (read-from-minibuffer script))
                           nil
                           (concat "rails " script))))
