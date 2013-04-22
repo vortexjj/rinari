@@ -550,7 +550,7 @@ With optional prefix argument ARG, just run `rgrep'."
   "Return (CONTROLLER . ACTION) after adjusting for the hash values at point."
   (let ((end (save-excursion
                (re-search-forward "[^,{(]$" nil t)
-               (+ 1 (point)))))
+               (1+ (point)))))
     (save-excursion
       (while (and (< (point) end)
                   (re-search-forward rinari-ruby-hash-regexp end t))
