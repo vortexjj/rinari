@@ -81,7 +81,10 @@ Should be used with `make-local-variable'.")
 ;;; Core plumbing
 
 (defun ruby-compilation--adjust-paths (beg end)
-  (replace-regexp "\\(^[\t ]+\\|\\[\\)/test" "\\1test" nil beg end))
+  (save-excursion
+    (goto-char beg)
+    (while (re-search-forward "\\(^[\t ]+\\|\\[\\)/test" end t)
+      (replace-match "\\1test"))))
 
 (defun ruby-compilation-filter ()
   "Filter function for compilation output."
@@ -95,7 +98,6 @@ Should be used with `make-local-variable'.")
       ;; escape sequence in one chunk and the rest in another.
       (when (< (point) end)
         (setq end (copy-marker end))
-        (message "applying ansi colors from %S to %S" beg end)
         (ansi-color-apply-on-region beg end)
         (ruby-compilation--adjust-paths beg end)))))
 
