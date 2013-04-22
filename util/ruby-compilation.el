@@ -4,7 +4,7 @@
 
 ;; Author: Eric Schulte
 ;; URL: https://github.com/eschulte/rinari
-;; Version: 0.14
+;; Version: 0.15
 ;; Created: 2008-08-23
 ;; Keywords: test convenience
 ;; Package-Requires: ((inf-ruby "2.2.1"))
@@ -80,10 +80,8 @@ Should be used with `make-local-variable'.")
 
 ;;; Core plumbing
 
-(defun ruby-compilation--adjust-paths (string)
-  (replace-regexp-in-string
-   "^\\([\t ]+\\)/test" "\\1test"
-   (replace-regexp-in-string "\\[/test" "[test" string)))
+(defun ruby-compilation--adjust-paths (beg end)
+  (replace-regexp "\\(^[\t ]+\\|\\[\\)/test" "\\1test" nil beg end))
 
 (defun ruby-compilation-filter ()
   "Filter function for compilation output."
@@ -96,15 +94,20 @@ Should be used with `make-local-variable'.")
       ;; Only operate on whole lines so we don't get caught with part of an
       ;; escape sequence in one chunk and the rest in another.
       (when (< (point) end)
-        (let ((replacement (ansi-color-apply
-                            (ruby-compilation--adjust-paths
-                             (buffer-substring beg end)))))
-          (delete-region beg end)
-          (insert replacement))))))
+        (setq end (copy-marker end))
+        (message "applying ansi colors from %S to %S" beg end)
+        (ansi-color-apply-on-region beg end)
+        (ruby-compilation--adjust-paths beg end)))))
 
 (defvar ruby-compilation--buffer-name nil
   "Used to store compilation name so recompilation works as expected.")
 (make-variable-buffer-local 'ruby-compilation--buffer-name)
+
+(defun ruby-compilation--kill-any-orphan-proc ()
+  "Ensure any dangling buffer process is killed."
+  (let ((orphan-proc (get-buffer-process (buffer-name))))
+    (when orphan-proc
+      (kill-process orphan-proc))))
 
 (define-compilation-mode ruby-compilation-mode "Ruby"
   "Ruby compilation mode."
@@ -113,7 +116,9 @@ Should be used with `make-local-variable'.")
     (set (make-local-variable 'compilation-error-regexp-alist-alist) nil)
     (add-hook 'compilation-filter-hook 'ruby-compilation-filter nil t)
     ;; Set any bound buffer name buffer-locally
-    (setq ruby-compilation--buffer-name ruby-compilation--buffer-name)))
+    (setq ruby-compilation--buffer-name ruby-compilation--buffer-name)
+    (set (make-local-variable 'kill-buffer-hook)
+         'ruby-compilation--kill-any-orphan-proc)))
 
 ;; Low-level API entry point
 (defun ruby-compilation-do (name cmdlist)
