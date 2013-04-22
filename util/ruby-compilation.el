@@ -4,7 +4,7 @@
 
 ;; Author: Eric Schulte
 ;; URL: https://github.com/eschulte/rinari
-;; Version: 0.13
+;; Version: 0.14
 ;; Created: 2008-08-23
 ;; Keywords: test convenience
 ;; Package-Requires: ((inf-ruby "2.2.1"))
@@ -85,47 +85,54 @@ Should be used with `make-local-variable'.")
    "^\\([\t ]+\\)/test" "\\1test"
    (replace-regexp-in-string "\\[/test" "[test" string)))
 
-(defun ruby-compilation--insertion-filter (proc string)
-  "When PROC sends STRING, strip ansi color codes and insert into buffer."
-  (with-current-buffer (process-buffer proc)
-    (let ((moving (= (point) (process-mark proc))))
-      (save-excursion
-	(goto-char (process-mark proc))
-	(insert (ansi-color-apply (ruby-compilation--adjust-paths string)))
-	(set-marker (process-mark proc) (point)))
-      (when moving
-        (goto-char (process-mark proc))))))
+(defun ruby-compilation-filter ()
+  "Filter function for compilation output."
+  (save-excursion
+    (forward-line 0)
+    (let ((end (point)) beg)
+      (goto-char compilation-filter-start)
+      (forward-line 0)
+      (setq beg (point))
+      ;; Only operate on whole lines so we don't get caught with part of an
+      ;; escape sequence in one chunk and the rest in another.
+      (when (< (point) end)
+        (let ((replacement (ansi-color-apply
+                            (ruby-compilation--adjust-paths
+                             (buffer-substring beg end)))))
+          (delete-region beg end)
+          (insert replacement))))))
 
-(defun ruby-compilation--sentinel (proc msg)
-  "When the state of PROC changes, display the corresponding MSG."
-  (message "%s - %s" proc (replace-regexp-in-string "\n" "" msg)))
+(defvar ruby-compilation--buffer-name nil
+  "Used to store compilation name so recompilation works as expected.")
+(make-variable-buffer-local 'ruby-compilation--buffer-name)
+
+(define-compilation-mode ruby-compilation-mode "Ruby"
+  "Ruby compilation mode."
+  (progn
+    (set (make-local-variable 'compilation-error-regexp-alist) ruby-compilation-error-regexp-alist)
+    (set (make-local-variable 'compilation-error-regexp-alist-alist) nil)
+    (add-hook 'compilation-filter-hook 'ruby-compilation-filter nil t)
+    ;; Set any bound buffer name buffer-locally
+    (setq ruby-compilation--buffer-name ruby-compilation--buffer-name)))
 
 ;; Low-level API entry point
 (defun ruby-compilation-do (name cmdlist)
-  "In a compilation buffer identified by NAME, run CMDLIST."
+  "In a buffer identified by NAME, run CMDLIST in `ruby-compilation-mode'.
+Returns the compilation buffer."
   (save-some-buffers (not compilation-ask-about-save)
                      (when (boundp 'compilation-save-buffers-predicate)
                        compilation-save-buffers-predicate))
-  (let ((this-dir default-directory)
-        (existing-buffer (get-buffer (concat "*" name "*"))))
+  (let* ((this-dir default-directory)
+         (ruby-compilation--buffer-name (concat "*" name "*"))
+         (existing-buffer (get-buffer ruby-compilation--buffer-name)))
     (when existing-buffer (with-current-buffer existing-buffer
-                            (setq default-directory this-dir))))
-  (let* ((buffer (apply 'make-comint name (car cmdlist) nil (cdr cmdlist)))
-         (proc (get-buffer-process buffer)))
-    (with-current-buffer buffer
-      (buffer-disable-undo)
-      (set-process-sentinel proc 'ruby-compilation--sentinel)
-      (set-process-filter proc 'ruby-compilation--insertion-filter)
-      (set (make-local-variable 'compilation-error-regexp-alist)
-           ruby-compilation-error-regexp-alist)
-      (set (make-local-variable 'kill-buffer-hook)
-           (lambda ()
-             (let ((orphan-proc (get-buffer-process (buffer-name))))
-               (when orphan-proc
-                 (kill-process orphan-proc)))))
-      (compilation-minor-mode t)
-      (ruby-compilation-minor-mode t)
-      (buffer-name))))
+                            (setq default-directory this-dir)))
+    (with-current-buffer
+        (compilation-start
+         (concat (car cmdlist) " "
+                 (mapconcat 'shell-quote-argument (cdr cmdlist) " "))
+         'ruby-compilation-mode
+         (lambda (b) ruby-compilation--buffer-name)))))
 
 (defun ruby-compilation--skip-past-errors (line-incr)
   "Repeatedly move LINE-INCR lines forward until the current line is not an error."
