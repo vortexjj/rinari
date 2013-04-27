@@ -910,7 +910,8 @@ happen only in the listed modes.  Major modes listed in
 `rinari-exclude-major-modes' will never have rinari
 auto-launched, but `rinari-launch' can still be used to manually
 enable rinari in buffers using those modes."
-  (when (and (or (null rinari-major-modes)
+  (when (and (not (minibufferp))
+             (or (null rinari-major-modes)
                  (memq major-mode rinari-major-modes))
              (or (null rinari-exclude-major-modes)
                  (not (memq major-mode rinari-exclude-major-modes))))
