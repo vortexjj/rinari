@@ -284,7 +284,7 @@ Use `font-lock-add-keywords' in case of `ruby-mode' or
          (script-path (concat (rinari--wrap-rails-command script) " ")))
     (when (string-match-p "^\\(db\\)?console" script)
       (error "Use the dedicated rinari function to run this interactive script"))
-    (ruby-compilation-run (concat script-path (read-from-minibuffer script))
+    (ruby-compilation-run (concat script-path " " (read-from-minibuffer (concat script " ")))
                           nil
                           (concat "rails " script))))
 
