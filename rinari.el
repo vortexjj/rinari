@@ -163,10 +163,6 @@ leave this to the environment variables outside of Emacs.")
   (list ";" "'")
   "List of characters, each of which will be bound (with control-c) as a prefix for `rinari-minor-mode-map'.")
 
-(defcustom rinari-inf-ruby-prompt-pattern nil
-  "An optional override for `inf-ruby-prompt-pattern' in `rinari-console' buffers."
-  :group 'rinari)
-
 (defvar rinari-partial-regex
   "render \\(:partial *=> \\)?*[@'\"]?\\([A-Za-z/_]+\\)['\"]?"
   "Regex that matches a partial rendering call.")
@@ -369,9 +365,6 @@ user edit the console command arguments."
                       (read-string "Run Ruby: " (concat command " "))
                     command))
     (with-current-buffer (run-ruby command "rails console")
-      (when rinari-inf-ruby-prompt-pattern
-        (dolist (var '(inf-ruby-prompt-pattern inf-ruby-first-prompt-pattern))
-          (set (make-local-variable var) rinari-inf-ruby-prompt-pattern)))
       (rinari-launch))))
 
 (defun rinari-sql-buffer-name (env)
