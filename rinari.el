@@ -159,6 +159,13 @@
 Leave this set to nil to not force any value for RAILS_ENV, and
 leave this to the environment variables outside of Emacs.")
 
+(defcustom rinari-test-include-test t
+  "Set this to include a -I <path to test sub-dir> argument to
+the command run by rinari when executing tests")
+
+(defcustom rinari-test-extra-args nil
+  "Use this to append additional arguments to the test command run by rinari")
+
 (defvar rinari-minor-mode-prefixes
   (list ";" "'")
   "List of characters, each of which will be bound (with control-c) as a prefix for `rinari-minor-mode-map'.")
@@ -292,12 +299,18 @@ argument EDIT-CMD-ARGS lets the user edit the test command
 arguments."
   (interactive "P")
   (or (rinari-test-function-name)
-      (string-match "test" (or (ruby-add-log-current-method)
-                               (file-name-nondirectory (buffer-file-name))))
-      (rinari-find-test))
+      (string-match "test\\|spec" (or (ruby-add-log-current-method)
+                                      (file-name-nondirectory (buffer-file-name))))
+      (rinari-find-test)
+      (rinari-find-rspec)
+      )
   (let* ((fn (rinari-test-function-name))
          (path (buffer-file-name))
-         (ruby-options (list "-I" (expand-file-name "test" (rinari-root)) path))
+         (include-options (if rinari-test-include-test
+                              (list "-I" (expand-file-name "test" (rinari-root)))))
+         (ruby-options (append include-options
+                               rinari-test-extra-args
+                               (list path)))
          (default-command (mapconcat
                            'identity
                            (append (list path) (when fn (list "--name" (concat "/" fn "/"))))
