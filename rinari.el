@@ -299,8 +299,11 @@ argument EDIT-CMD-ARGS lets the user edit the test command
 arguments."
   (interactive "P")
   (or (rinari-test-function-name)
-      (string-match "test\\|spec" (or (ruby-add-log-current-method)
-                                      (file-name-nondirectory (buffer-file-name))))
+      ;; Are we looking at a test method? Need to protect against nil
+      (string-match "test" (or (ruby-add-log-current-method)
+                               ""))
+      ;; Are we looking at a test file?
+      (string-match "test\\|spec" (file-name-nondirectory (buffer-file-name)))
       (rinari-find-test)
       (rinari-find-rspec)
       )
