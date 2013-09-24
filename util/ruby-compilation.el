@@ -138,7 +138,7 @@ Returns the compilation buffer."
          (concat (car cmdlist) " "
                  (mapconcat 'shell-quote-argument (cdr cmdlist) " "))
          'ruby-compilation-mode
-         (lambda (b) ruby-compilation--buffer-name)))))
+         `(lambda (b) ,ruby-compilation--buffer-name)))))
 
 (defun ruby-compilation--skip-past-errors (line-incr)
   "Repeatedly move LINE-INCR lines forward until the current line is not an error."
